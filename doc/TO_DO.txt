@@ -1,0 +1,2 @@
+Document EAP-AKA calculations
+  - hopefully will migrate to pure python
