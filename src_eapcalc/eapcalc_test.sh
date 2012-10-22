@@ -2,13 +2,12 @@
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 - 
-# Version 0.3 Last change at Jun 1, 2012
+# Version 0.3 Last change at Oct 22, 2012
 # Automated testing tool to verify correct computations
 ##################################################################
 
-# Change to calc.exe for Windows
-EXE="eapcalc.exe"
-#EXE="./eapcalc"
+# To enable shell debugging insert "set -x" where needed
+# To disable shell debugging insert "set +x" where needed
 
 # Verify that value exist
 checkIfExist () {
@@ -28,6 +27,17 @@ checkResult () {
     echo "$1 FAIL!!!!"
   fi
 }
+
+# Detect target system (currently only tested on XP)
+TARGET=`set |grep "^OS="`
+if [ "$TARGET" = "OS=Windows_NT" ]
+then 
+    # Change to calc.exe for Windows
+    EXE="eapcalc.exe"
+else
+    # Linux, Solaris
+    EXE="./eapcalc"
+fi
 
 ##############################
 # SIM calculation
@@ -95,7 +105,7 @@ RES=`$EXE mac-sim $K $E $msg `
 OK=""
 for p in $RES
 do
-  checkIfExist $p MAC=0721DED000663E9C7237BA47FAEF2A9E
+  checkIfExist $p MAC=78F2FD7A52D6E07146307E684B4B9AAB
 done
 checkResult "MAC-SIM" $OK "X"
 
@@ -190,5 +200,9 @@ done
 checkResult "AES128-DECODE" $OK "X"
 
 
-
+######################################################        
+# History
+# Ver 0.2.5 - May 25, 2012 - Calculating EAP-AKA,EAP-AKA'
+# Ver 0.2.8 - Aug 2012 - SIM calculations added
+# Ver 0.3   - Oct 22, 2012 - Value for mac-sim was wrong. Platform automatically recognized
 
