@@ -104,6 +104,7 @@ Detailed technical info (sources)
 RFC 2104 - HMAC: Keyed-Hashing for Message Authentication
 RFC 2865 - RADIUS
 RFC 2866 - RADIUS Accounting
+RFC 2868 - RADIUS Attributes for Tunnel Protocol Support
 RFC 3588 - Diameter Base Protocol
 RFC 3748 - Extensible Authentication Protocol (EAP)
 RFC 4186 - EAP-SIM

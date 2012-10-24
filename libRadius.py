@@ -2,7 +2,7 @@
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 - May 2012
-# Version 0.2.7, Last change on May 12, 2012
+# Version 0.3, Last change on Oct 24, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
@@ -41,6 +41,7 @@ class AVPItem:
         self.name=""
         self.vendor=0
         self.type=""
+        self.tag=""
         self.mandatory=""
         
 class HDRItem:
@@ -68,6 +69,9 @@ def LoadDictionary(file):
     global asF64
     global asIP
     global asTime
+    global asU24
+    global asTString
+    global asTPasswd
     doc = minidom.parse(file)
     node = doc.documentElement
     dict_avps = doc.getElementsByTagName("avp")
@@ -83,7 +87,10 @@ def LoadDictionary(file):
     asU64=["Unsigned64"]
     asF64=["Float64"]
     asIP=["IPAddress"]
-    asTime=["Time"]    
+    asTime=["Time"] 
+    asU24=["Unsigned24"]
+    asTString=["TaggedString"]
+    asTPasswd=["TaggedPassword"]
     dict_typedefs=doc.getElementsByTagName("typedef")
     for td in dict_typedefs:
         tName=td.getAttribute("name")
@@ -107,7 +114,13 @@ def LoadDictionary(file):
         if tType in asIP:
            asIP.append(tName)
         if tType in asTime:
-           asTime.append(tName)   
+           asTime.append(tName) 
+        if tType in asU24:
+           asU24.append(tName)
+        if tType in asTString:
+           asTString.append(tName)
+        if tType in asTPasswd:
+           asTPasswd.append(tName)
         
 # Find AVP definition in dictionary
 def dictAVPname2code(A,avpname,avpvalue):
@@ -118,6 +131,7 @@ def dictAVPname2code(A,avpname,avpvalue):
         A.code = avp.getAttribute("code")
         A.mandatory=avp.getAttribute("mandatory")
         A.type = avp.getAttribute("type")
+        A.tag = avp.getAttribute("tag")
         vId = avp.getAttribute("vendor-id")
         if avpname==A.name:
            if vId=="":
@@ -138,6 +152,7 @@ def dictAVPcode2name(A,avpcode,vendorcode):
         A.type = avp.getAttribute("type")
         A.code = int(avp.getAttribute("code"))
         A.mandatory=avp.getAttribute("mandatory")
+        A.tag = avp.getAttribute("tag")
         vId = avp.getAttribute("vendor-id")
         if int(avpcode)==A.code:
             if vId=="":
@@ -334,6 +349,24 @@ def decode_UTF8String(data,dlen):
     utf8=utf8decoder(ret)
     return utf8[0]
 
+def decode_Unsigned24(data):
+    (tag,data)=chop_msg(data,2)
+    print data,len(data)
+    while len(data)<8:
+        data="0"+data
+    ret=struct.unpack("!I",data.decode("hex"))[0]
+    return (ord(tag.decode("hex")),int(ret))
+    
+def decode_TString(data,dlen):
+    (tag,data)=chop_msg(data,2)
+    return (ord(tag.decode("hex")),decode_OctetString(data,dlen-2))
+
+def decode_TPasswd(data,dlen):
+    print data,dlen,len(data)
+    (tag,data)=chop_msg(data,2)
+    (salt,data)=chop_msg(data,4)
+    return (ord(tag.decode("hex")),salt,decode_OctetString(data,dlen-6))
+    
 #----------------------------------------------------------------------
     
 # Quit program with error
@@ -353,6 +386,14 @@ def chop_msg(msg,size):
 #   |     Type      |    Length     |  Value ...
 #   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 
+#    0                   1                   2
+#    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9
+#   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+#   |     Type      |    Length     |  CHAP Ident   |  String ...
+#   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+#    0                   1                   2                   3
+
+#   Vendor-Specific
 #    0                   1                   2                   3
 #    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 #   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -362,6 +403,30 @@ def chop_msg(msg,size):
 #   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #   |    Attribute-Specific...
 #   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+# Tunnel-Type
+#    0                   1                   2                   3
+#    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+#   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#   |     Type      |    Length     |     Tag       |     Value
+#   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#               Value (cont)        |
+#   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+#    0                   1                   2                   3
+#    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+#   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#   |     Type      |    Length     |       Tag     |    String ...
+#   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+#   Tunnel-Type Password
+#    0                   1                   2                   3
+#    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+#   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#   |     Type      |    Length     |     Tag       |   Salt
+#   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#      Salt (cont)  |   String ...
+#   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 def encode_finish(A,pktlen,data):
     ret=data
@@ -424,6 +489,28 @@ def encode_Address(A,data):
     ret=pack_address(data).encode("hex")
     pktlen=2+len(ret)/2
     return encode_finish(A,pktlen,ret)
+    
+def encode_Unsigned24(A,data):
+    r=struct.pack("!I",int(data))
+    ret=r.encode("hex")
+    pktlen=6
+    return encode_finish(A,pktlen,ret[2:])    
+
+def encode_TString(A,data):
+    fs="!"+str(len(data))+"s"
+    dbg="Encoding String format:",fs
+    logging.debug(dbg)
+    ret=struct.pack(fs,data).encode("hex")
+    pktlen=2+len(ret)/2
+    return encode_finish(A,pktlen,ret)
+
+def encode_TPasswd(A,data):
+    fs="!"+str(len(data))+"s"
+    dbg="Encoding String format:",fs
+    logging.debug(dbg)
+    ret=struct.pack(fs,data).encode("hex")
+    pktlen=2+len(ret)/2
+    return encode_finish(A,pktlen,ret)    
 
 def do_encode(A,data):
     if A.type in asUTF8:
@@ -444,6 +531,12 @@ def do_encode(A,data):
         return encode_Address(A,data)
     if A.type in asTime:
         return encode_Time(A,data)
+    if A.type in asU24:
+        return encode_Unsigned24(A,data)        
+    if A.type in asTString:
+        return encode_TString(A,data)        
+    if A.type in asTPasswd:
+        return encode_TPasswd(A,data)        
     # default is OctetString  
     return encode_OctetString(A,data)  
 
@@ -492,7 +585,7 @@ def decodeAVP(msg):
     logging.debug(dbg)
     mcode=ord(scode.decode("hex"))
     mvid=0
-    if scode=="1A":
+    if scode=="1A":         # Vendor-Specific
         (svendor,msg)=chop_msg(msg,8)
         (scode,msg)=chop_msg(msg,2)
         (slen,msg)=chop_msg(msg,2)
@@ -543,10 +636,18 @@ def decodeAVP(msg):
         decoded=True
         logging.debug("Decoding Time")
         ret= decode_Time(msg)
-    if A.type=="Grouped":
+    if A.type in asU24:
         decoded=True
-        logging.debug("Decoding Grouped")
-        ret= decode_Grouped(msg)
+        logging.debug("Decoding U24")
+        ret= decode_Unsigned24(msg)
+    if A.type in asTString:
+        decoded=True
+        logging.debug("Decoding TString")
+        ret= decode_TString(msg,mlen)
+    if A.type in asTPasswd:
+        decoded=True
+        logging.debug("Decoding TPasswd")
+        ret= decode_TPasswd(msg,mlen)        
     if not decoded:
       # default is OctetString
       logging.debug("Decoding OctetString")
@@ -610,6 +711,8 @@ def calcAuthenticator(H,auth,secret):
     msg=msg+"%32X"%auth+H.msg+secret.encode("hex")
     m=md5_constructor(msg.decode("hex")).digest()
     return m
+    
+# chappass = md5(ident + plaintextpass + challenge)    
 
 def createReq(H,avps):
     H.msg=joinAVPs(avps)
@@ -674,6 +777,17 @@ def PwDecrypt(password,authenticator,secret):
     return pw.decode('utf-8')
 
 def PwCrypt(password,authenticator,secret):
+    #Call the shared secret S and the pseudo-random 128-bit Request
+    #Authenticator RA.  Break the password into 16-octet chunks p1, p2,
+    #etc.  with the last one padded at the end with nulls to a 16-octet
+    #boundary.  Call the ciphertext blocks c(1), c(2), etc.  We'll need
+    #intermediate values b1, b2, etc.
+    #    b1 = MD5(S + RA)       c(1) = p1 xor b1
+    #    b2 = MD5(S + c(1))     c(2) = p2 xor b2
+    #            .                       .
+    #    bi = MD5(S + c(i-1))   c(i) = pi xor bi
+    # The String will contain c(1)+c(2)+...+c(i) where + denotes concatenation.
+    # On receipt, the process is reversed to yield the original password.  
     password = password.encode('utf-8')
     buf = password
     if len(password) % 16 != 0:
@@ -689,6 +803,35 @@ def PwCrypt(password,authenticator,secret):
         buf = buf[16:]
     return result
 
+def ChapPwCrypt(id,password,authenticator):
+    #The RADIUS server looks up a password based on the User-Name,
+    #encrypts the challenge using MD5 on the CHAP ID octet, that password,
+    #and the CHAP challenge (from the CHAP-Challenge attribute if present,
+    #otherwise from the Request Authenticator), and compares that result
+    #to the CHAP-Password
+    password = password.encode('utf-8')
+    _pwd =  md5_constructor(chr(id)+password+authenticator).digest()
+    for i in range(16):
+        result += _pwd[i]
+    return result    
+
+def TunnelPwCrypt(password,authenticator,salt,secret):
+    #Call the shared secret S, the pseudo-random 128-bit Request
+    #Authenticator (from the corresponding Access-Request packet) R,
+    #and the contents of the Salt field A.  Break P into 16 octet
+    #chunks p(1), p(2)...p(i), where i = len(P)/16.  
+    #Intermediate values b(1), b(2)...c(i) are required.  Encryption
+    #is performed in the following manner ('+' indicates concatenation):
+    #   b(1) = MD5(S + R + A)    c(1) = p(1) xor b(1)
+    #   b(2) = MD5(S + c(1))     c(2) = p(2) xor b(2)
+    #        .                      .
+    #   b(i) = MD5(S + c(i-1))   c(i) = p(i) xor b(i)
+    #The resulting encrypted String field will contain
+    #c(1)+c(2)+...+c(i).
+    #On receipt, the process is reversed to yield the plaintext String.
+    return PwCrypt(password,authenticator+salt,secret)
+    
 ######################################################        
 # History
 # Ver 0.2.7 - May 25, 2012 - Radius Client - initial        
+# Ver 0.3   - Oct 24, 2012 - Radius tunnel AVP support added

@@ -2,7 +2,8 @@
 <!-- Based on the Wireshark dictionary.xml 2010-03-19 -->
 <!-- Unified command codes to use unique name 2012 May 08 -->
 <!-- EAP codes moved to separate dictionary 2012 May 13 -->
-<!-- Last change 2012 May 27 -->
+<!-- Support for Tunnel Attributes 2012 Oct 24 -->
+<!-- Last change 2012 Oct 24 -->
 <dictionary>
     <!-- *********************** Diameter Typedefs ************************* -->
     <!-- Basic types are OctetString, UTF8String, Unsigned32/64, Integer32/64, Float32/64 -->
@@ -22,44 +23,15 @@
     <typedef name="RadiusInteger"                   type="Unsigned32"/>
     <typedef name="RadiusTime"                      type="Time"/>
     <typedef name="RadiusDate"                      type="Time"/>
-    <typedef name="EncryptedRadiusString"           type="EncryptedPassword"/>
-    <!-- RADIUS specific - not implemented -->
+    <!-- RADIUS specific - implemented -->
     <typedef name="RadiusTunnelInteger"             type="Unsigned24"/>
-    <typedef name="HashedRadiusString"              type="HashedString"/>
-    <typedef name="MessageAuthenticatorChecksum"    type="MessageAuthenticator"/>
-    <typedef name="RadiusStatusType"                type="RadiusSignalChanger"/>
-    <typedef name="DhcpType"                        type="SignalChanger"/>
+    <typedef name="RadiusTunnelString"              type="TaggedString"/>
+    <typedef name="RadiusTunnelPassword"            type="TaggedPassword"/>
+    <!-- RADIUS specific - not implemented -->
+    <typedef name="EncryptedChapPassword"           type="EncryptedPassword"/>
     <!-- *********************** Radius Vendors ************************* -->
     <vendor code="0"     vendor-id="None"       name="None" />
-    <vendor code="9"     vendor-id="Cisco"      name="Cisco Systems Inc." />
-    <vendor code="62"    vendor-id="Merit"      name="Merit" />
-    <vendor code="94"    vendor-id="Nokia"      name="Nokia" />
-    <vendor code="161"   vendor-id="Motorola"   name="Motorola" />
-    <vendor code="193"   vendor-id="Ericsson"   name="Ericsson" />           
-    <vendor code="311"   vendor-id="MS"         name="Microsoft Corporation" />
-    <vendor code="429"   vendor-id="USR"        name="US Robotics" />
-    <vendor code="2352"  vendor-id="Redback"    name="Redback" />
-    <vendor code="2637"  vendor-id="Nortel"     name="Nortel Networks" />
-    <vendor code="2636"  vendor-id="Juniper"    name="Juniper" />
-    <vendor code="3199"  vendor-id="Shasta"     name="Shasta" />
-    <vendor code="3561"  vendor-id="DSLForum"   name="DSL Forum" />
-    <vendor code="4329"  vendor-id="Siemens"    name="Siemens AG" />
-    <vendor code="5535"  vendor-id="TGPP2"      name="3rd Generation Partnership Project 2 (3GPP2)" />
-    <vendor code="8164"  vendor-id="SN"         name="Starent Networks (special coding)" />
-    <vendor code="8164"  vendor-id="SN1"        name="Starent Networks" />
-    <vendor code="9421"  vendor-id="VFD2"       name="Vodafone D2" />
     <vendor code="10415" vendor-id="TGPP"       name="3rd Generation Partnership Project (3GPP)" />
-    <vendor code="10548" vendor-id="Netzwert"   name="Netzwert AG" />
-    <vendor code="10923" vendor-id="EriJun"     name="Ericsson Juniper" />
-    <vendor code="12645" vendor-id="Vodafone"   name="Vodafone" />
-    <vendor code="12951" vendor-id="Verizon"    name="Verizon Wireless Enterprise" />
-    <vendor code="13019" vendor-id="ETSI"       name="European Telecommunications Standards Institute" />
-    <vendor code="13568" vendor-id="NeuStar"    name="NeuStar" />
-    <vendor code="14122" vendor-id="WISPr"      name="WiFi-Alliance" />
-    <vendor code="15573" vendor-id="Apertio"    name="Apertio Ltd." />
-    <vendor code="24757" vendor-id="WiMAX"      name="WiMAX Forum" />
-    <vendor code="28458" vendor-id="NSN"        name="Nokia Siemens Networks" />
-    <vendor code="29168" vendor-id="TMO"        name="T-Mobile International" />
     <!-- *********************** Radius command codes ************************* -->
     <command code="1"   name="Access-Request"/> 
     <command code="2"   name="Access-Accept"/> 
@@ -162,10 +134,10 @@
     <avp code="63" name="Login-LAT-Port" type="RadiusString" />
     <avp code="64" name="Tunnel-Type" type="RadiusTunnelInteger" />
     <avp code="65" name="Tunnel-Medium-Type" type="RadiusTunnelInteger" />
-    <avp code="66" name="Tunnel-Client-Endpoint" type="RadiusString" />
-    <avp code="67" name="Tunnel-Server-Endpoint" type="RadiusString" />
-    <avp code="68" name="Acct-Tunnel-Connection" type="RadiusString" />
-    <avp code="69" name="Tunnel-Password" type="HashedRadiusString" />
+    <avp code="66" name="Tunnel-Client-Endpoint" type="RadiusTunnelString" />
+    <avp code="67" name="Tunnel-Server-Endpoint" type="RadiusTunnelString" />
+    <avp code="68" name="Acct-Tunnel-Connection" type="RadiusTunnelString" />
+    <avp code="69" name="Tunnel-Password" type="RadiusTunnelPassword" />
     <avp code="70" name="ARAP-Password" type="RadiusString" />
     <avp code="71" name="ARAP-Features" type="RadiusString" />
     <avp code="72" name="ARAP-Zone-Access" type="RadiusInteger" />
@@ -177,17 +149,17 @@
     <avp code="78" name="Configuration-Token" type="RadiusString" />
     <avp code="79" name="EAP-Message" type="RadiusString" />
     <avp code="80" name="Message-Authenticator" type="MessageAuthenticatorChecksum" />
-    <avp code="81" name="Tunnel-Private-Group-ID" type="RadiusString" />
-    <avp code="82" name="Tunnel-Assignment-ID" type="RadiusString" />
+    <avp code="81" name="Tunnel-Private-Group-ID" type="RadiusTunnelString" />
+    <avp code="82" name="Tunnel-Assignment-ID" type="RadiusTunnelString" />
     <avp code="83" name="Tunnel-Preference" type="RadiusTunnelInteger" />
     <avp code="84" name="ARAP-Challenge-Response" type="RadiusString" />
     <avp code="85" name="Acct-Interim-Interval" type="RadiusInteger" />
-    <avp code="86" name="Acct-Tunnel-Packets-Lost" type="RadiusInteger" />
+    <avp code="86" name="Acct-Tunnel-Packets-Lost" type="RadiusTunnelInteger" />
     <avp code="87" name="NAS-Port-Id" type="RadiusString" />
     <avp code="88" name="Framed-Pool" type="RadiusString" />
     <avp code="89" name="CUI" type="RadiusString" />
-    <avp code="90" name="Tunnel-Client-Auth-ID" type="RadiusString" />
-    <avp code="91" name="Tunnel-Server-Auth-ID" type="RadiusString" />
+    <avp code="90" name="Tunnel-Client-Auth-ID" type="RadiusTunnelString" />
+    <avp code="91" name="Tunnel-Server-Auth-ID" type="RadiusTunnelString" />
       <!-- IANA: 92-93 unassigned -->
     <avp code="94" name="Originating-Line-Info" type="RadiusString" />
     <!-- 95-100 as defined in RFC 3162  -->
@@ -199,7 +171,7 @@
     <avp code="99" name="Framed-IPv6-Route" type="RadiusString" />
     <!-- IANA: conflicting information, taking IANA as source -->
     <avp code="100" name="Framed-IPv6-Pool" type="RadiusString" />
-    <avp code="101"  name="Error-Cause" type="RadiusInteger" />
+    <avp code="101" name="Error-Cause" type="RadiusInteger" />
     <avp code="102" name="EAP-Key-Name" type="RadiusString" />
     <avp code="103" name="Digest-Response" type="RadiusString" />
     <avp code="104" name="Digest-Realm" type="RadiusString" />
@@ -292,8 +264,8 @@
     <avp code="192" name="Pre-Input-Packets" type="RadiusInteger" />
     <avp code="193" name="Pre-Output-Packets" type="RadiusInteger" />
     <avp code="194" name="Maximum-Time" type="RadiusInteger" />
-    <avp code="195"  name="Disconnect-Cause" type="RadiusInteger" />
-    <avp code="196"  name="Connect-Progress" type="RadiusInteger" />
+    <avp code="195" name="Disconnect-Cause" type="RadiusInteger" />
+    <avp code="196" name="Connect-Progress" type="RadiusInteger" />
     <avp code="197" name="Data-Rate" type="RadiusInteger" />
     <avp code="198" name="PreSession-Time" type="RadiusInteger" />
     <avp code="199" name="Token-Idle" type="RadiusInteger" />
@@ -353,7 +325,6 @@
     <avp code="253" name="PPP-Address" type="RadiusIpaddress" />
     <avp code="254" name="MPP-Idle-Percent" type="RadiusInteger" />
     <avp code="255" name="Xmit-Rate" type="RadiusInteger" />    
-    <!-- -->
     <!-- VSA AVPs 3GPP {{{ -->
     <avp code="1"  name="3GPP-IMSI" type="RadiusString" vendor-id="TGPP" />
     <avp code="2"  name="3GPP-Charging-Id" type="RadiusInteger" vendor-id="TGPP" />
