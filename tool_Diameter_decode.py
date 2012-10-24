@@ -2,13 +2,13 @@
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 - March 2012
-# Version 0.2.5, Last change on Mar 16, 2012
+# Version 0.3, Last change on Oct 24, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
 # Decode diameter packet into individual AVPs
 
-from diamClient import *
+from libDiameter import *
 import sys
 
 if __name__ == "__main__":

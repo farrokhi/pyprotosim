@@ -1,0 +1,12 @@
+# use glob syntax.
+syntax: glob
+
+*.pyc
+*.exe
+*.rhel
+*.solx86
+*.ubuntu
+
+# switch to regexp syntax.
+#syntax: regexp
+#^\.pc/

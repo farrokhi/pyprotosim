@@ -8,7 +8,7 @@
 
 # Decode radius packet into individual AVPs
 
-from radClient import *
+from libRadius import *
 import sys
 
 if __name__ == "__main__":
