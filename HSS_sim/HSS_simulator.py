@@ -2,11 +2,11 @@
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 - October 2012
-# Version 0.2.8, Last change on Oct 04, 2012
+# Version 0.2.9, Last change on Oct 10, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
-# HSS Simulator build upon aaaClient 
+# HSS Simulator build upon libDiameter 
 # interrupt the program with Ctrl-C
 
 #Next two lines include parent directory for where libDiameter is located
@@ -270,7 +270,7 @@ if __name__ == "__main__":
     # level for decoding are: DEBUG, INFO, WARNING, ERROR, CRITICAL
     # logging.basicConfig(filename='/path/to/your/log', level=logging.INFO)
     logging.basicConfig(level=logging.INFO)
-    # Define server host:port to use
+    # Define server_host:port to use
     HOST, PORT = "10.14.5.148", 3869
     
     ORIGIN_HOST="server.test.com"

@@ -282,7 +282,10 @@ def groupPairs(list):
     last="T"
     list.pop(0)
     (op,msgID)=list.pop(0)
-    appId=list[0]
+    if isinstance(list[0],tuple):
+        (appId,x)=list.pop(0)
+    else:
+        appId=list[0]
     cls,pc,tag=BERdecode(appId.decode("hex"))
     # Let's pack attributes
     i=0
@@ -313,7 +316,7 @@ def decodeValue(t):
         return decodeToInt(value)
     if tag in [7,4,0]:
         return value.decode("hex")
-    return "Unknown type "+str(tag)
+    return "Dec Unknown type "+str(tag)
 
 def encodeValue(op,value):
     cls,pc,tag=BERdecode(op.decode("hex"))
@@ -324,7 +327,13 @@ def encodeValue(op,value):
         return encodeToInt(op,value)
     if tag in [7,4,0]:
         return encodeToStr(op,value)
-    return "Unknown type "+str(tag)
+    return "Enc Unknown type "+str(tag)
+    
+def encodeKeyValue(key,value):
+    k=encodeToStr('04',key).decode('hex')
+    v=encodeToStr('04',value).decode('hex')
+    ret=encodeToStr('30',k+encodeToStr('31',v).decode('hex'))
+    return ret
 
 def decodeFinal(msgId,op,list):
     cls,pc,tag=BERdecode(op.decode("hex"))
@@ -344,6 +353,11 @@ def decodeFinal(msgId,op,list):
         L.matchedDN=decodeValue(list[1][1])
         L.errorMSG=decodeValue(list[1][2])    
         return L
+    if tag==2:
+        L=bindRes
+        L.messageId=msgId
+        L.code=op
+        return L        
     if tag==3:
         L=searchReq
         L.messageId=msgId
@@ -388,51 +402,14 @@ def decodeFinal(msgId,op,list):
     dbg="Don't know how to process AppId",tag
     bailOut(dbg)
     
-#Version is not needed    
-#line that begins with a single space is a continuation of the previous (non-empty) line.
-#line that begins with a pound-sign ("#", ASCII 35) is a comment line
-#zero-length attribute value is represented as AttributeDescription ":" FILL SEP.  Example: "seeAlso:" followed by a newline
-#Values or distinguished names that end with SPACE SHOULD be base-64 encoded
-
-def loadLDIF(file):
-    # Load file
-    f=open(file)
-    list=f.readlines()
-    f.close()
-    # Join splitted lines
-    ret=[]
-    prev=''
-    # Add extra line to process last line
-    list.append('')
-    for line in list:
-        # Remove CR/LF
-        ln=line.rstrip()
-        if len(ln)>1:
-            if ln[0]==" ":
-                if ln[1].isalpha():
-                    # join splitted lines (but ommit leading blank)
-                    prev=prev+ln[1:]
-                    ln=""
-        if len(prev)!=0:
-            if prev[0]!="#":
-                ret.append(removeSpaces(prev))
-        prev=ln
+def create_statusRes(msgId,code,result,matchedDN,errorMSG):
+    # Adding from end to the beginning in Tree-like structure
+    # 04="%02X"%dict_tag['OCTET_STRING']    
+    ret=''
+    ret=encodeValue('04',errorMSG)+ret
+    ret=encodeValue('04',matchedDN)+ret
+    ret=encodeValue('0A',result)+ret
+    ret=encodeToStr(code,ret.decode("hex"))
+    ret=encodeValue('02',msgId)+ret
+    ret=encodeToStr('30',ret.decode("hex"))
     return ret
-    
-def removeSpaces(line):
-    for x in string.whitespace:
-        line = line.replace(x,"")
-    return line
-    
-def findInLdif(value,list):
-    ret=[]
-    start=ERROR
-    for line in list:
-        # Return found only between dn lines
-        if line.startswith("dn:"):
-            start=line.find(value)
-        if start!=ERROR:
-            ret.append(line)
-    return ret
-                    
-     

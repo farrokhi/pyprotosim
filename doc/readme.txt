@@ -2,9 +2,9 @@ Python Protocol Simulator
 -----------------------------
 
 Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
-EAP calculations use parts of hostapd code http://w1.fi/hostapd
+EAP calculations use parts of hostapd code (http://w1.fi/hostapd)
 Copyright (c) 2004-2008, Jouni Malinen and contributors. All rights reserved.
-EAP-SIM calculations use a3a8 code http://http://www.scard.org/gsm
+EAP-SIM calculations use a3a8 code (http://http://www.scard.org/gsm)
 Copyright 1998, Marc Briceno, Ian Goldberg, and David Wagner. All rights reserved.
 
 This program is licensed under the BSD license (the one with advertisement
@@ -29,7 +29,7 @@ additional installations).
 The goal was to have:
 - a PORTABLE diameter client (that means no installation required, just unpack 
   and run, without changing existing applications on system) 
-- primary usage is TESTING
+- primary usage is TESTING, hot heavy load or simplest usage
 - must work on x86 Solaris 10, Linux and Windows
 - dictionary is mandatory (to easily test mismatched AVP or modify values)
 - unknown AVPs need to be easily manageable (inserted without defining in 
@@ -38,10 +38,10 @@ The goal was to have:
   calculations
 - must be able to send deliberately malformed packet
 
-And it worked. Like a charm. So I got carried away and added support for 
+And it worked like a charm. So I got carried away and added support for 
 radius. And DHCP. And LDAP. And SNMP is planned :-)
 Now on more serious note:
- - DHCP client was done simple as a proof that python can easily send RAW 
+ - DHCP client was done simply as a proof that python can easily send RAW 
    packets. But it is not tested enough, especially in multi-homed environment
    (more than one network card). 
  - Similar goes for LDAP library. I tried a new approach, but - yuck: I don't 
@@ -51,8 +51,8 @@ Now on more serious note:
 Naming
 ------
 
-Original name had diameter in it. But as the project grew, that name had to be 
-omitted. Finally, name was settled to PYthon Protocol Simulator (pronounced as 
+Original name was about testing AAA server I was testing on. But as the project grew, that name had to be 
+changed. Finally, name was settled to PYthon Protocol Simulator (pronounced as 
 "pipes"). 
 
 Features
@@ -98,7 +98,7 @@ A3A8 calculation use code from http://www.scard.org/gsm
 Parts od DHCP code are based on 
 http://pydhcplib.sourcearchive.com/documentation/0.6.2-2/main.html
 
-Detailed technical info (sources)
+Detailed technical info (RFCs and other standards)
 -----------------------
 
 RFC 2104 - HMAC: Keyed-Hashing for Message Authentication
@@ -113,8 +113,10 @@ RFC 4740 - Diameter Session Initiation Protocol (SIP) Application
 RFC 5448 - EAP-AKA'
 3GPP TS 35.206 - Specification of Milenage Algorithm Set 
 FIPS 186-2 + Change Notice - Pseudo Random Function
+RFC 2132 - DHCP Options and BOOTP Vendor Extensions
+For full list check at http://www.zytrax.com/books/dhcp/apc/
 and probably some others I forgot to mention while researching some issue
-For DHCP check list at http://www.zytrax.com/books/dhcp/apc/
+
 For LDAP I'm still digging, so it will not be listed here yet
 
 Developer's note
@@ -127,13 +129,12 @@ idea that almost anyone could take a look at the code and make modifications
 to suit his needs, so no fancy coding or too language-specific features were 
 used. Mostly :-)
 So - if you like OOP or want to have more consistent feel - rewrite it to suit
-your needs. I definitely don't plan to. Adding a feature I need heavily (or a 
+your needs. I definitely don't plan to. Adding a feature I need (or a 
 bug fix) is a highly possible. But no other plans. Yet :-)
 This was never intended to be "heavy traffic" tool, but simple (and versatile)
 testing tool. 
 I know that for DHCP you have Options, not AVPs, but... to stick with similar 
-naming/code, I just renamed them. So now you do have DHCP dictionary (with 
-necessary modifications) :-)
+naming/code, I just renamed them. And you also have DHCP dictionary :-)
 In LDAP I tried not to use dictionary, but I don't like how the code looks 
 like. So it is possible I'll switch to "dictionary approach". And I do not 
 like how code decodes LDAP packet (not decoding itself, but determining 
@@ -144,16 +145,20 @@ Simplified dictionary
 
 I "hate" unmaintainable dictionaries. So this one is as simple as I could make
 it without too much fuss.
-You have basic types. You can define "typedefs" which are encoded as basic 
+I know that in diameter you can specify AVPs per Application Id. I did not 
+need that type of complexity. So I simplified.
+You have basic types. You can define "typedefs" which are aliased to basic 
 types. You have vendors and AVPs. Only minimum of fields are present. 
 Enumerated types are unlisted by design, so the dictionary can survive 
 without update (It means that value will not be decoded, but left as integer).
+Grouped AVPs are defined as container only.
 Including other dictionaries is not something I needed at design time.
-So feel free to modify it to full blown dictionary. I did when experimenting,
-and then choose to "simplify" it. Since AVP packing is done by hand, I have 
-full freedom to put inside whatever I want. No rules to stop me :-) Exactly 
-what I needed. But then - your mileage might wary. 
-I even included the code I used to create dictionary from wireshark dictionary.
+So feel free to modify it to full blown dictionary. I did during experimenting,
+and then choose to "simplify" it. But then - your mileage might wary. 
+Using wireshark dictionary directly was an option, but... I needed multiple 
+test dictionaries and this approach was abandoned.
+Code to create simplified dictionary from wireshark dictionary files is 
+included. 
 
 License
 -------

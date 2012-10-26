@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
-# February 2012 - May 2012
+# February 2012 - 
 # Version 0.3, Last change on Oct 24, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################

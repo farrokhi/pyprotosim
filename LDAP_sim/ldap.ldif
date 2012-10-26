@@ -1,0 +1,28 @@
+dn: msisdn=4917232124537, dc=MSISDN, dc=C-NTDB
+objectClass: pcrfCommon
+imsi: 262011234563121
+msisdn: 1234563121
+profile: 001
+profile: 3120
+SubscriberServiceProfile: TM00003120
+pcrfServiceId: 3120
+TariffID: 20
+TotalMaximumVolume: 5
+TotalUsedVolume: 6
+Bill_cycleDate: 16
+Bill_cycleType: day
+Bill_cycleDuration: month
+NextObject: dn: subdata=pcrfProf, msisdn=4917232124537, dc=MSISDN, dc=C-NTDB
+objectClass: pcrfCommon
+imsi: 262011234563122
+msisdn: 1234563122
+profile: 001
+profile: 3120
+SubscriberServiceProfile: TM00003120
+pcrfServiceId: 3120
+TariffID: 20
+TotalMaximumVolume: 5
+TotalUsedVolume: 6
+Bill_cycleDate: 16
+Bill_cycleType: day
+Bill_cycleDuration: month

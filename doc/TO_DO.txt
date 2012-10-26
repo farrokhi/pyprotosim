@@ -1,2 +1,3 @@
-Document EAP-AKA calculations
-  - hopefully will migrate to pure python
+Hopefully will migrate to pure python
+Radius Password (CHAP+Tunnel) needs to be tested/decoded
+
