@@ -14,7 +14,7 @@ import sys
 if __name__ == "__main__":
     # level for decoding are: DEBUG, INFO, WARNING, ERROR, CRITICAL
     #logging.basicConfig(level=logging.DEBUG)
-    LoadDictionary("diamDict.xml")
+    LoadDictionary("dictDiameter.xml")
     msg=sys.argv[1]
     print "="*30
     H=HDRItem()
