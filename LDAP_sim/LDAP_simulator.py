@@ -10,7 +10,7 @@
 # LDAP Simulator build upon libLdap
 # interrupt the program with Ctrl-C
 
-#Next two lines include parent directory for where libDiameter is located
+#Next two lines include parent directory for where libLDAP is located
 import sys
 sys.path.append("..")
 # Remove them if everything is in the same dir
@@ -86,25 +86,20 @@ def create_bindRes(msgId):
 def create_searchEntry(msgId,list):
     # Adding attributes in order
     ret=''
-    print "LIST:",list
     baseObject=list.pop(0)
     for l in list:
-        print "Options:",l
         r=l.split(':',1)
         ret=ret+encodeKeyValue(r[0],r[1])
     ret=encodeToStr('30',ret.decode('hex'))
+    # skip dn: before adding
     ret=encodeToStr('04',baseObject[3:])+ret
     ret=encodeToStr('64',ret.decode('hex'))
-    ret=encodeValue('02',msgId)+ret
+    ret=encodeToStr('02',msgId.decode('hex'))+ret
     ret=encodeToStr('30',ret.decode("hex"))    
     return ret
 
 def create_searchRes(msgId,code,optList):    
     L=decodeFinal(msgId,code,optList)
-    print "baseObject",L.baseObject
-    print "scope",L.scope
-    print "derefAliases", L.derefAliases
-    print "filter",L.filter
     ret=do_search(msgId,L.baseObject,L.scope)
     if len(ret)==0:
         # SearchResDone - No such object
@@ -208,9 +203,9 @@ if __name__ == "__main__":
     # Define server host:port to use
     HOST, PORT = "10.14.5.148", 16611
     
-    ORIGIN_HOST="server.test.com"
-    ORIGIN_REALM="test.com"
     # Create the server, binding to HOST:PORT
+    # To allow SO_REUSEADDR, set allow_resue_address to True BEFORE bind
+    SocketServer.TCPServer.allow_reuse_address = True
     server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
 
     # Activate the server; this will keep running until you
@@ -220,5 +215,6 @@ if __name__ == "__main__":
 ######################################################        
 # History
 # 0.2.9 - Oct 11, 2012 - initial version
-# 0.3.0 - Ost 26, 2012 - finally got it working
+# 0.3.0 - Oct 26, 2012 - finally got it working
+#       - Oct 29, 2012 - msgId encoding fixed, reuseaddr fixed
 

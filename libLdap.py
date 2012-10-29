@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
-# February 2012 - May 2012
-# Version 0.2.9, Last change on Oct 11, 2012
+# February 2012 -
+# Version 0.3, Last change on Oct 26, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
@@ -129,7 +129,7 @@ class bindReq:
         self.name=""
         self.authentication=""
 
-class bindRes:
+class genericRes:
     def __init__(self):
         self.messageId=0     
         self.code=0
@@ -337,7 +337,7 @@ def encodeKeyValue(key,value):
 
 def decodeFinal(msgId,op,list):
     cls,pc,tag=BERdecode(op.decode("hex"))
-    if tag==0:
+    if tag==0:  # bindReq
         L=bindReq
         L.messageId=msgId
         L.code=op
@@ -345,20 +345,20 @@ def decodeFinal(msgId,op,list):
         L.name=decodeValue(list[1][1])
         L.authentication=decodeValue(list[1][2])
         return L
-    if tag==1:
-        L=bindRes
+    if tag==1:  # bindRes
+        L=genericRes
         L.messageId=msgId
         L.code=op
         L.result=decodeValue(list[1][0])
         L.matchedDN=decodeValue(list[1][1])
         L.errorMSG=decodeValue(list[1][2])    
         return L
-    if tag==2:
-        L=bindRes
+    if tag==2:  # unbindReq
+        L=genericRes
         L.messageId=msgId
         L.code=op
         return L        
-    if tag==3:
+    if tag==3:  # searchReq
         L=searchReq
         L.messageId=msgId
         L.code=op
@@ -370,7 +370,7 @@ def decodeFinal(msgId,op,list):
         L.typesOnly=decodeValue(list[1][5])
         L.filter=decodeValue(list[1][6])
         return L
-    if tag==4:
+    if tag==4:  # searchResEntry
         L=searchRes
         L.messageId=msgId
         L.code=op
@@ -391,8 +391,8 @@ def decodeFinal(msgId,op,list):
                         att.append(key+'='+value)
         L.attributes=att
         return L   
-    if tag==5:
-        L=bindRes
+    if tag==5:  # searchresDone
+        L=genericRes
         L.code=op
         L.messageId=msgId
         L.result=decodeValue(list[1][0])
@@ -410,6 +410,6 @@ def create_statusRes(msgId,code,result,matchedDN,errorMSG):
     ret=encodeValue('04',matchedDN)+ret
     ret=encodeValue('0A',result)+ret
     ret=encodeToStr(code,ret.decode("hex"))
-    ret=encodeValue('02',msgId)+ret
+    ret=encodeToStr('02',msgId.decode("hex"))+ret
     ret=encodeToStr('30',ret.decode("hex"))
     return ret

@@ -3,6 +3,9 @@ cd ..
 echo bindRequest
 python ./tool_ldap_decode.py 3020020102601b020103040d636e3d6161614c544555736572800773646672756e31
 read a
+echo bindRequest - reconnect 
+python ./tool_ldap_decode.py 302102010f601c020103040e636e3d616161326733675573657280077369656d656e73
+read a
 echo bindResponse
 python ./tool_ldap_decode.py 30840000000f02040000000261070a010004000400
 read a
