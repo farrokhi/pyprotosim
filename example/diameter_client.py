@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
-# February 2012 - March 2012
-# Version 0.2.7, Last change on May 16, 2012
+# February 2012 - 
+# Version 0.3, Last change on Oct 30, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
@@ -13,7 +13,7 @@ sys.path.append("..")
 
 # EAP-AKA/AKA' client
 
-from diamClient import *
+from libDiameter import *
 import eap
 import datetime
 import time
@@ -105,7 +105,7 @@ def Payload_Challenge_Response(ID,RAND,ETYPE):
     # Add AT_RES
     EAP.avps.append(("AT_RES",XRES))
     # Add AT_MAC as last
-    eap.addMAC(EAP,KENCR) 
+    eap.addMAC(EAP,KENCR,'') 
     # Do not add any AVPs after adding MAC
     Payload=eap.encode_EAP(EAP)
     # Payload now contains EAP-Payload AVP
@@ -369,4 +369,5 @@ if __name__ == "__main__":
 ######################################################        
 # History
 # 0.2.6 - Apr 27, 2012 - First full-working version
-# 0.2.7 - May 25, 2017 - Code cleanup. id matching improoved
+# 0.2.7 - May 25, 2012 - Code cleanup. id matching improoved
+# 0.3   - Oct 30, 2012 - lib renamed, eap params fix

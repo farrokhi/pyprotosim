@@ -65,6 +65,7 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                         for r in ret:
                             self.request.send(r.decode("hex"))
 
+
 def process_request(rawdata):
     opt=decodeMSG(rawdata)
     msgId,appId,code,optList=groupPairs(opt)
@@ -77,6 +78,8 @@ def process_request(rawdata):
     if appId==3:
         logging.info("searchRequest")
         return create_searchRes(msgId,code,optList)
+    dbg="Unknown request",appId
+    logging.info(dbg)
     return ERROR
 
 def create_bindRes(msgId):
@@ -86,69 +89,43 @@ def create_bindRes(msgId):
 def create_searchEntry(msgId,list):
     # Adding attributes in order
     ret=''
-    baseObject=list.pop(0)
-    for l in list:
+    baseObject=list[0]
+    for l in list[1:]:
         r=l.split(':',1)
         ret=ret+encodeKeyValue(r[0],r[1])
-    ret=encodeToStr('30',ret.decode('hex'))
+    ret=encodeStr('30',ret.decode('hex'))
     # skip dn: before adding
-    ret=encodeToStr('04',baseObject[3:])+ret
-    ret=encodeToStr('64',ret.decode('hex'))
-    ret=encodeToStr('02',msgId.decode('hex'))+ret
-    ret=encodeToStr('30',ret.decode("hex"))    
+    ret=encodeStr('04',baseObject[3:])+ret
+    ret=encodeStr('64',ret.decode('hex'))
+    ret=encodeStr('02',msgId.decode('hex'))+ret
+    ret=encodeStr('30',ret.decode("hex"))    
     return ret
 
 def create_searchRes(msgId,code,optList):    
     L=decodeFinal(msgId,code,optList)
-    ret=do_search(msgId,L.baseObject,L.scope)
-    if len(ret)==0:
+    lldif=findInLdif(L.baseObject,LDIF)
+    ret=[]
+    if len(lldif)>0:
+        # Do we search for baseObject or wholeSubTree
+        if L.scope==0:
+            #baseObject - only top level:
+            ret.append(create_searchEntry(msgId,lldif[0]))
+        else:
+            #wholeSubTree
+            for l in lldif:
+                ret.append(create_searchEntry(msgId,l))
+        # SearchResDone - OK
+        ret.append(create_statusRes(msgId,'65',0,'',''))
+    else:
         # SearchResDone - No such object
         s,mDN=L.baseObject.split(',',1)
         ret.append(create_statusRes(msgId,'65',32,mDN,''))
-    else:
-        # SearchResDone - OK
-        ret.append(create_statusRes(msgId,'65',0,'',''))
     return ret    
 
-def do_search(msgId,baseObject,scope):
-    ldif=findInLdif(baseObject,LDIF)
-    ret=[]
-    if len(ldif)==0:
-        return ret
-    else:
-        # Do we search for baseObject or wholeSubTree
-        res=splitOnNextObject(ldif)
-        if scope==0:
-            #baseObject - end on NextObject:
-            return [create_searchEntry(msgId,res[0])]
-        else:
-            #wholeSubTree - split on each NextObject:
-            for l in res:
-                ret.append(create_searchEntry(msgId,l))
-            return ret
-    return ERROR
-
-def splitOnNextObject(list):
-    ret=[]
-    tmp=[]
-    start=ERROR
-    for line in list:
-        # Return found only between dn lines
-        if line.startswith("NextObject:"):
-            ret.append(tmp)
-            tmp=[line[11:]]
-        else:
-            tmp.append(line)
-    if len(tmp)>0:
-        ret.append(tmp)
-    return ret
-        
-#Version is not needed    
+#Version is ignored
 #line that begins with a single space is a continuation of the previous (non-empty) line.
 #line that begins with a pound-sign ("#", ASCII 35) is a comment line
-#zero-length attribute value is represented as AttributeDescription ":" FILL SEP.  Example: "seeAlso:" followed by a newline
-#Values or distinguished names that end with SPACE SHOULD be base-64 encoded
-
+#Load ldif file  into array of lists, each containing single object (first line always dn:..., ends with empty line)
 def loadLDIF(file):
     # Load file
     f=open(file)
@@ -156,12 +133,16 @@ def loadLDIF(file):
     f.close()
     # Join splitted lines
     ret=[]
+    tmp=[]
     prev=''
+    START=ERROR
     # Add extra line to process last line
     list.append('')
     for line in list:
         # Remove CR/LF
         ln=line.rstrip()
+        if line.startswith("dn:"):
+            START=1
         if len(ln)>1:
             if ln[0]==" ":
                 if ln[1].isalpha():
@@ -170,8 +151,15 @@ def loadLDIF(file):
                     ln=""
         if len(prev)!=0:
             if prev[0]!="#":
-                ret.append(removeSpaces(prev))
+                tmp.append(removeSpaces(prev))
+        else:
+            START=ERROR
+            if len(tmp)>0:
+                ret.append(tmp)
+                tmp=[]
         prev=ln
+    if len(tmp)>0:
+        ret.append(tmp)
     return ret
     
 def removeSpaces(line):
@@ -179,26 +167,25 @@ def removeSpaces(line):
         line = line.replace(x,"")
     return line
 
-def findInLdif(value,list):
+def findInLdif(value,llist):
     ret=[]
-    start=ERROR
     # No spaces allowed in value for search
-    what=removeSpaces(value)
-    for line in list:
-        # Return found only between dn lines
-        if line.startswith("dn:"):
-            start=line.find(what)
-        if start!=ERROR:
+    what=removeSpaces(value.lower())
+    for line in llist:
+        # match any place in dn: line
+        ll=line[0].lower()
+        if ll.find(what)>ERROR:
             ret.append(line)
     return ret
                        
 if __name__ == "__main__":
+    
     # level for decoding are: DEBUG, INFO, WARNING, ERROR, CRITICAL
     # logging.basicConfig(filename='/path/to/your/log', level=logging.INFO)
-    logging.basicConfig(level=logging.INFO)
+    #logging.basicConfig(level=logging.INFO)
     
     # Load ldif file
-    LDIF=loadLDIF("ldap.ldif")
+    LDIF=loadLDIF("ldap-t.ldif")
     
     # Define server host:port to use
     HOST, PORT = "10.14.5.148", 16611
@@ -217,4 +204,5 @@ if __name__ == "__main__":
 # 0.2.9 - Oct 11, 2012 - initial version
 # 0.3.0 - Oct 26, 2012 - finally got it working
 #       - Oct 29, 2012 - msgId encoding fixed, reuseaddr fixed
+#                      - ldif parsing changed
 

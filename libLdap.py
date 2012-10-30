@@ -218,14 +218,14 @@ def decodeToInt(msg):
     ret=struct.unpack("!I",msg.decode("hex"))[0]
     return ret
 
-def encodeToInt(op,value):
+def encodeInt(op,value):
     ret=op
     ret=ret+'04' # len
     r=struct.pack("!I",int(value))
     ret=ret+r.encode("hex")
     return ret
     
-def encodeToStr(op,value):
+def encodeStr(op,value):
     ret=op
     if len(value)<128:
         ret=ret+"%02X"%len(value)
@@ -234,16 +234,6 @@ def encodeToStr(op,value):
     ret=ret+value.encode("hex")
     return ret
  
-def encodeTo(op,value):
-    ret=op
-    mlen=len(value)/2
-    if len(value)<128:
-        ret=ret+"%02X"%mlen
-    else:
-        ret=ret+"82"+"%04X"%mlen
-    ret=ret+value
-    return ret
-    
 # Quit program with error
 def bailOut(msg):
     logging.error(msg)
@@ -324,15 +314,15 @@ def encodeValue(op,value):
     logging.info(dbg)
     if tag in [1,2,10]:
         # Encode integer
-        return encodeToInt(op,value)
+        return encodeInt(op,value)
     if tag in [7,4,0]:
-        return encodeToStr(op,value)
+        return encodeStr(op,value)
     return "Enc Unknown type "+str(tag)
     
 def encodeKeyValue(key,value):
-    k=encodeToStr('04',key).decode('hex')
-    v=encodeToStr('04',value).decode('hex')
-    ret=encodeToStr('30',k+encodeToStr('31',v).decode('hex'))
+    k=encodeStr('04',key).decode('hex')
+    v=encodeStr('04',value).decode('hex')
+    ret=encodeStr('30',k+encodeStr('31',v).decode('hex'))
     return ret
 
 def decodeFinal(msgId,op,list):
@@ -368,7 +358,12 @@ def decodeFinal(msgId,op,list):
         L.sizeLimit=decodeValue(list[1][3])           
         L.timeLimit=decodeValue(list[1][4])
         L.typesOnly=decodeValue(list[1][5])
-        L.filter=decodeValue(list[1][6])
+        if len(list[1])>6:
+            L.filter=decodeValue(list[1][6])
+        else:
+            if list[2]=='a4':
+                (c,v)=list[5][0]
+                L.filter=decodeValue(list[3][0])+"="+v.decode("hex")
         return L
     if tag==4:  # searchResEntry
         L=searchRes
@@ -409,7 +404,14 @@ def create_statusRes(msgId,code,result,matchedDN,errorMSG):
     ret=encodeValue('04',errorMSG)+ret
     ret=encodeValue('04',matchedDN)+ret
     ret=encodeValue('0A',result)+ret
-    ret=encodeToStr(code,ret.decode("hex"))
-    ret=encodeToStr('02',msgId.decode("hex"))+ret
-    ret=encodeToStr('30',ret.decode("hex"))
+    ret=encodeStr(code,ret.decode("hex"))
+    ret=encodeStr('02',msgId.decode("hex"))+ret
+    ret=encodeStr('30',ret.decode("hex"))
     return ret
+
+######################################################        
+# History
+# 0.2.9 - Oct 11, 2012 - initial version
+# 0.3.0 - Oct 26, 2012 - finally got it working
+#       - Oct 29, 2012 - msgId encoding fixed, reuseaddr fixed
+#                      - encodeTo* renamed to encode* (more logical)

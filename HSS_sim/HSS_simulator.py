@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 - October 2012
@@ -268,8 +268,8 @@ def getQuintet(UserName,NumOfItems,AuthScheme):
     
 if __name__ == "__main__":
     # level for decoding are: DEBUG, INFO, WARNING, ERROR, CRITICAL
-    # logging.basicConfig(filename='/path/to/your/log', level=logging.INFO)
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(filename='/tmp/log', level=logging.INFO)
+    #logging.basicConfig(level=logging.INFO)
     # Define server_host:port to use
     HOST, PORT = "10.14.5.148", 3869
     
@@ -277,6 +277,8 @@ if __name__ == "__main__":
     ORIGIN_REALM="test.com"
     LoadDictionary("../dictDiameter.xml")
     # Create the server, binding to HOST:PORT
+    # To allow SO_REUSEADDR, set allow_resue_address to True BEFORE bind
+    SocketServer.TCPServer.allow_reuse_address = True
     server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
 
     # Activate the server; this will keep running until you
