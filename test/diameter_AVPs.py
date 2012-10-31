@@ -12,9 +12,7 @@ sys.path.append("..")
 # Remove them normally
 
 # Testing handling basic AVP types
-from diamClient import *
-
-
+from libDiameter import *
 
 if __name__ == '__main__':
     #logging.basicConfig(level=logging.DEBUG)

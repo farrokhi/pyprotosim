@@ -585,7 +585,7 @@ def decodeAVP(msg):
     logging.debug(dbg)
     mcode=ord(scode.decode("hex"))
     mvid=0
-    if scode=="1A":         # Vendor-Specific
+    if scode.lower()=="1a":         # Vendor-Specific
         (svendor,msg)=chop_msg(msg,8)
         (scode,msg)=chop_msg(msg,2)
         (slen,msg)=chop_msg(msg,2)
@@ -830,8 +830,25 @@ def TunnelPwCrypt(password,authenticator,salt,secret):
     #c(1)+c(2)+...+c(i).
     #On receipt, the process is reversed to yield the plaintext String.
     return PwCrypt(password,authenticator+salt,secret)
+
+#---------------------------------------------------------------------- 
+
+def getCurrentDateTime():
+    t=time.localtime()
+    return t.tm_year,t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec
+
+# converts to seconds since epoch
+def epoch2date(sec):
+    t=time.localtime(sec)
+    return t.tm_year,t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec
+
+def date2epoch(tYear,tMon,tDate,tHr,tMin,tSec):  
+    t=time.strptime("{0} {1} {2} {3} {4} {5}".format(tYear,tMon,tDate,tHr,tMin,tSec),"%Y %m %d %H %M %S")
+    return time.mktime(t)
     
 ######################################################        
 # History
 # Ver 0.2.7 - May 25, 2012 - Radius Client - initial        
 # Ver 0.3   - Oct 24, 2012 - Radius tunnel AVP support added
+#           - Oct 30, 2012 - decoding vendor-specific attributes case mismatch fixed
+#           - Oct 31, 2012 - converting time to/from epoch added

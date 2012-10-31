@@ -12,7 +12,8 @@ sys.path.append("..")
 # Remove them normally
 
 # Testing handling basic AVP types
-from radClient import *
+from libRadius import *
+import time
 
 if __name__ == '__main__':
     #logging.basicConfig(level=logging.DEBUG)
