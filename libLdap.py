@@ -177,7 +177,7 @@ def calc_len(len):
         #short form
         ret="%02X"%int(len)
     else:
-        #long form limited to 2 bytes (65535 bytes) for my usage
+        #long form limited to 2 bytes (64K)
         if len<256:
             ret="0x81"+"%02X"%int(len)
         else:
@@ -189,7 +189,7 @@ def BERencode(cls,pc,tag):
             enc=cls+pc+tag
             return "%02X"%int(enc)
         else:
-            #limited to 2 bytes for my usage
+            #limited to 2 bytes 
             enc=cls+0x3F
             if tag<127:
                 return "%02X"%int(enc)+"%02X"%int(tag)
@@ -219,10 +219,14 @@ def decodeToInt(msg):
     return ret
 
 def encodeInt(op,value):
-    ret=op
-    ret=ret+'04' # len
-    r=struct.pack("!I",int(value))
-    ret=ret+r.encode("hex")
+    ilen=4
+    r=struct.pack("!I",int(value)).encode("hex")
+    while r[:2]=='00':
+        r=r[2:]
+        ilen-=1
+        if ilen==1:
+            break
+    ret=op+'%02X'%ilen+r
     return ret
     
 def encodeStr(op,value):
@@ -315,13 +319,18 @@ def encodeValue(op,value):
     if tag in [1,2,10]:
         # Encode integer
         return encodeInt(op,value)
-    if tag in [7,4,0]:
+    else:
         return encodeStr(op,value)
     return "Enc Unknown type "+str(tag)
     
 def encodeKeyValue(key,value):
     k=encodeStr('04',key).decode('hex')
-    v=encodeStr('04',value).decode('hex')
+    if isinstance(value,list):
+        v=''
+        for vv in value:
+            v=v+encodeStr('04',vv).decode('hex')
+    else:
+        v=encodeStr('04',value).decode('hex')
     ret=encodeStr('30',k+encodeStr('31',v).decode('hex'))
     return ret
 
@@ -414,4 +423,6 @@ def create_statusRes(msgId,code,result,matchedDN,errorMSG):
 # 0.2.9 - Oct 11, 2012 - initial version
 # 0.3.0 - Oct 26, 2012 - finally got it working
 #       - Oct 29, 2012 - msgId encoding fixed, reuseaddr fixed
-#                      - encodeTo* renamed to encode* (more logical)
+#                      - encodeTo<Type> renamed to encode<Type> (more logical)
+#                      - multiple values for key now supported
+#                      - int len now not fixed

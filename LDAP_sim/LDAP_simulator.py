@@ -3,7 +3,7 @@
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 - 
-# Version 0.3, Last change on Oct 26, 2012
+# Version 0.3, Last change on Oct 30, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
@@ -88,11 +88,11 @@ def create_bindRes(msgId):
     
 def create_searchEntry(msgId,list):
     # Adding attributes in order
-    ret=''
     baseObject=list[0]
-    for l in list[1:]:
-        r=l.split(':',1)
-        ret=ret+encodeKeyValue(r[0],r[1])
+    ret=findUnique(list[1:])
+    #for l in list[1:]:
+    #    r=l.split(':',1)
+    #    ret=ret+encodeKeyValue(r[0],r[1])
     ret=encodeStr('30',ret.decode('hex'))
     # skip dn: before adding
     ret=encodeStr('04',baseObject[3:])+ret
@@ -101,6 +101,24 @@ def create_searchEntry(msgId,list):
     ret=encodeStr('30',ret.decode("hex"))    
     return ret
 
+def findUnique(list):
+    keys=[]
+    ret=''
+    # create list of unique keys
+    for l in list:
+        r=l.split(':',1)
+        if not r[0] in keys:
+            keys.append(r[0])
+    # for each key find all values
+    for k in keys:
+        tmp=[]
+        for l in list[1:]:
+            r=l.split(':',1)
+            if r[0]==k:
+                tmp.append(r[1])
+        ret=ret+encodeKeyValue(k,tmp)
+    return ret
+    
 def create_searchRes(msgId,code,optList):    
     L=decodeFinal(msgId,code,optList)
     lldif=findInLdif(L.baseObject,LDIF)
@@ -181,9 +199,11 @@ def findInLdif(value,llist):
 if __name__ == "__main__":
     
     # level for decoding are: DEBUG, INFO, WARNING, ERROR, CRITICAL
-    # logging.basicConfig(filename='/path/to/your/log', level=logging.INFO)
+    # To log to a file, enable next line
+    #logging.basicConfig(filename='/path/to/your/log', level=logging.INFO)
+    # To log to a console, enable next line
     #logging.basicConfig(level=logging.INFO)
-    
+  
     # Load ldif file
     LDIF=loadLDIF("ldap-t.ldif")
     
