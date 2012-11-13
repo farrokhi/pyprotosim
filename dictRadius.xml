@@ -332,4 +332,14 @@
     <avp code="4"  name="3GPP-CG-Address" type="RadiusIpaddress" vendor-id="TGPP" />
     <avp code="5"  name="3GPP-GPRS-QoS-Profile" type="RadiusString" vendor-id="TGPP" />
     <avp code="6"  name="3GPP-SGSN-Address" type="RadiusIpaddress" vendor-id="TGPP" />
+    <avp code="6"  name="3GPP-GGSN-Address" type="RadiusIpaddress" vendor-id="TGPP" />
+    <avp code="8"  name="3GPP-IMSI-MCC-MNC" type="RadiusString" vendor-id="TGPP" />    
+    <avp code="9"  name="3GPP-GGSN-MCC-MNC" type="RadiusString" vendor-id="TGPP" />   
+    <avp code="10"  name="3GPP-NSAPI" type="RadiusString" vendor-id="TGPP" />       
+    <avp code="12"  name="3GPP-Selection-Mode" type="RadiusString" vendor-id="TGPP" />  
+    <avp code="13"  name="3GPP-Charging-Characteristics" type="RadiusString" vendor-id="TGPP" />   
+    <avp code="20"  name="3GPP-IMEISV" type="RadiusString" vendor-id="TGPP" />  
+    <avp code="20"  name="3GPP-RAT-Type" type="RadiusString" vendor-id="TGPP" />     
+    <avp code="22"  name="3GPP-User-Location-Info" type="RadiusString" vendor-id="TGPP" />   
+    <avp code="26"  name="3GPP-Negotiated-DSCP" type="RadiusString" vendor-id="TGPP" />      
 </dictionary>

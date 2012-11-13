@@ -2,11 +2,14 @@
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 - 
-# Version 0.2.3 Last change at Feb 25, 2012
+# Version 0.3.1 Last change on Nov 13, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
-# levels for logging are: DEBUG, INFO, WARNING, ERROR, CRITICAL
+# Create "simplified" dictionary based on wireshark dictionary files
+# e.g - Grouped are not defined
+# only must flag is set
+# vendor ID is automatic if vendor!=None
 
 import xml.dom.minidom as minidom
 import sys
@@ -73,7 +76,7 @@ def LoadDictionary(file,tag,vtag):
 
 if __name__ == "__main__":
     DIR="./diameter"
-    # Dont ask me why, but parser broke on this file
+    # Dont ask me why, but python parser broke on this file
     skip=["mobileipv6.xml"]
     # And I prefer to have main dictionary first, and other in alphabetical order
     skip.append("dictionary.xml")
@@ -88,5 +91,7 @@ if __name__ == "__main__":
             else:
                 LoadDictionary(DIR+"/"+fname,"avp","")
 
-
-
+######################################################        
+# History
+# 0.2.3 - Feb 25, 2012 - initial release 
+# 0.3.1 - Nov 13, 2012 - Enumerated included (yeah - I was wrong)

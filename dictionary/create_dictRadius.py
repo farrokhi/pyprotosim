@@ -182,4 +182,6 @@ if __name__ == "__main__":
     LoadVendorDictionaries(files)
     findTypes(files)
 
-
+######################################################        
+# History
+# 0.2.3 - Feb 25, 2012 - initial release 
