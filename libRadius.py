@@ -291,11 +291,11 @@ def pack_address(address):
     # addrs=socket.getaddrinfo(address, None)
     # This is NOT a proper code, but it will do for now
     # unfortunately, getaddrinfo does not work on windows with IPv6
-    if address.find('.')>0:
+    if address.find('.')!=ERROR:
         raw = inet_pton(socket.AF_INET,address);
         d=struct.pack('!h4s',1,raw)
         return d[2:]
-    if address.find(':')>0:
+    if address.find(':')!=ERROR:
         raw = inet_pton(socket.AF_INET6,address);
         d=struct.pack('!h16s',2,raw)
         return d
@@ -852,6 +852,23 @@ def epoch2date(sec):
 def date2epoch(tYear,tMon,tDate,tHr,tMin,tSec):  
     t=time.strptime("{0} {1} {2} {3} {4} {5}".format(tYear,tMon,tDate,tHr,tMin,tSec),"%Y %m %d %H %M %S")
     return time.mktime(t)
+
+#----------------------------------------------------------------------  
+# TS 29.060   
+def encode_GeoLoc(LocType,MCC,MNC,LAC,CI):
+    ret="%02X"%LocType
+    if len(MNC)==2:
+        ret=ret+MCC[1]+MCC[0]+'F'+MCC[2]+MNC[1]+MNC[0]
+    else:
+        ret=ret+MCC[1]+MCC[0]+MNC[2]+MCC[2]+MNC[1]+MNC[0]
+    ret=ret+"%04X"%LAC
+    if LocType==2:
+        # RAC
+        ret=ret+"%02X"%CI+"FF"
+    else:
+        # SAC,CI
+        ret=ret+"%04X"%CI
+    return ret
     
 ######################################################        
 # History
@@ -859,3 +876,5 @@ def date2epoch(tYear,tMon,tDate,tHr,tMin,tSec):
 # Ver 0.3   - Oct 24, 2012 - Radius tunnel AVP support added
 #           - Oct 30, 2012 - decoding vendor-specific attributes case mismatch fixed
 #           - Oct 31, 2012 - converting time to/from epoch added
+# Ver 0.3.1 - Nov 13, 2012 - bugfix in pack_addr (if IPvg starts with :)
+#                          - encodeGeoLoc added
