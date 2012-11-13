@@ -53,8 +53,9 @@ class HDRItem:
         self.msg=""
 
 #----------------------------------------------------------------------
+# Dictionary routines
 
-# Load dictionary
+# Load simplified dictionary from <file>
 def LoadDictionary(file):
     global dict_avps
     global dict_vendors
@@ -122,7 +123,7 @@ def LoadDictionary(file):
         if tType in asTPasswd:
            asTPasswd.append(tName)
         
-# Find AVP definition in dictionary
+# Find AVP definition in dictionary: User-Name->1
 def dictAVPname2code(A,avpname,avpvalue):
     dbg="Searching dictionary for N",avpname,"V",avpvalue
     logging.debug(dbg)
@@ -142,7 +143,7 @@ def dictAVPname2code(A,avpname,avpvalue):
     dbg="Searching dictionary failed for N",avpname,"V",avpvalue
     bailOut(dbg)
 
-# Find AVP definition in dictionary
+# Find AVP definition in dictionary: 1->User-Name
 def dictAVPcode2name(A,avpcode,vendorcode):
     dbg="Searching dictionary for ","C",avpcode,"V",vendorcode
     logging.debug(dbg)
@@ -164,7 +165,8 @@ def dictAVPcode2name(A,avpcode,vendorcode):
     A.name="Unknown Attr-"+str(A.code)+" (Vendor:"+A.vendor+")"
     A.type="OctetString"
     return 
-    
+
+# Find Vendor definition in dictionary: 10415->TGPP
 def dictVENDORcode2id(code):
     dbg="Searching Vendor dictionary for C",code
     logging.debug(dbg)
@@ -176,6 +178,7 @@ def dictVENDORcode2id(code):
     dbg="Searching Vendor dictionary failed for C",code
     bailOut(dbg)
 
+# Find Vendor definition in dictionary: TGPP->10415
 def dictVENDORid2code(vendor_id):
     dbg="Searching Vendor dictionary for V",vendor_id
     logging.debug(dbg)
@@ -187,6 +190,7 @@ def dictVENDORid2code(vendor_id):
     dbg="Searching Vendor dictionary failed for V",vendor_id
     bailOut(dbg)
 
+# Find Command definition in dictionary: Access-Request->1
 def dictCOMMANDname2code(name):
     for command in dict_commands:
          cName=command.getAttribute("name")
@@ -195,7 +199,8 @@ def dictCOMMANDname2code(name):
             return int(cCode)
     dbg="Searching CMD dictionary failed for N",name
     bailOut(dbg)
-    
+
+# Find Command definition in dictionary: 1->Access-Request    
 def dictCOMMANDcode2name(code):
     cmd=ERROR
     for command in dict_commands:
@@ -298,8 +303,6 @@ def pack_address(address):
     bailOut(dbg)
 
 #----------------------------------------------------------------------
-
-#
 # Decoding section
 #
 
@@ -428,6 +431,7 @@ def chop_msg(msg,size):
 #      Salt (cont)  |   String ...
 #   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
+# Common finishing touch for all types
 def encode_finish(A,pktlen,data):
     ret=data
     dbg="Packing","C:",A.code,"V:",A.vendor,"L:",pktlen,"D:",ret
@@ -512,6 +516,7 @@ def encode_TPasswd(A,data):
     pktlen=2+len(ret)/2
     return encode_finish(A,pktlen,ret)    
 
+   
 def do_encode(A,data):
     if A.type in asUTF8:
         return encode_UTF8String(A,data)
@@ -561,7 +566,8 @@ def getAVPDef(AVP_Name,AVP_Value):
     dbg="AVP dictionary def","N",A.name,"C",A.code,"M",A.mandatory,"T",A.type,"V",A.vendor,"D",data
     logging.debug(dbg)
     return do_encode(A,data) 
-    
+
+# Main entry for encoding all types in form Name=Value    
 def encodeAVP(AVP_Name,AVP_Value):
     dbg="Packing AVP",AVP_Name,AVP_Value
     logging.info(dbg)
@@ -578,6 +584,7 @@ def encodeAVP(AVP_Name,AVP_Value):
 
 #----------------------------------------------------------------------
 
+# Main entry for decoding raw message into AVPs
 def decodeAVP(msg):
     (scode,msg)=chop_msg(msg,2)
     (slen,msg)=chop_msg(msg,2)
@@ -656,6 +663,7 @@ def decodeAVP(msg):
     logging.info(dbg)
     return (A.name,ret)
 
+# In decoded answer search for AVP name    
 def findAVP(what,list):
     for avp in list:
         if isinstance(avp,tuple):
@@ -667,6 +675,7 @@ def findAVP(what,list):
     return ERROR
     
 #---------------------------------------------------------------------- 
+# Header and packet routines
 
 #    0                   1                   2                   3
 #    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -712,8 +721,6 @@ def calcAuthenticator(H,auth,secret):
     m=md5_constructor(msg.decode("hex")).digest()
     return m
     
-# chappass = md5(ident + plaintextpass + challenge)    
-
 def createReq(H,avps):
     H.msg=joinAVPs(avps)
     #H.Authenticator=createAuthenticator()
