@@ -402,7 +402,6 @@ def encode_UTF8String(A,flags,data):
     return encode_finish(A,flags,pktlen,ret)
     
 def encode_Integer32(A,flags,data):
-    print data
     r=struct.pack("!I",data)
     ret=r.encode("hex")
     pktlen=12
@@ -497,7 +496,7 @@ def encodeAVP(AVP_Name,AVP_Value):
     if type(AVP_Value).__name__=='list':
         p=''
         for x in AVP_Value:
-            while len(x)<calc_padding(len(x)):
+            while len(x)/2<calc_padding(len(x)/2):
                 x=x+'00'
             p=p+x
         msg=getAVPDef(AVP_Name,p.decode("hex"))
@@ -707,7 +706,7 @@ def Connect(host,port):
 # Ver 0.1.1 - Feb 07, 2012 - commands moved into dictionary
 # Ver 0.1.2 - Feb 11, 2012 - internal reorganization, code cleanup
 # Ver 0.2.0 - Feb 17, 2012 - EAP-Payload decoder
-# Ver 0.2.1 - Feb 19, 2012 - EAP-Payload+ AKA/AKA' C calculations
+# Ver 0.2.1 - Feb 19, 2012 - EAP-Payload + AKA/AKA' C calculations
 # Ver 0.2.2 - Feb 23, 2012 - Testing client AKA/AKA'
 # Ver 0.2.3 - Feb 25, 2012 - Multiple bugfixes, logging
 # Ver 0.2.4 - Mar 05, 2012 - Simplified dictionary, AVP types in sets
@@ -715,3 +714,4 @@ def Connect(host,port):
 # Ver 0.2.6 - Mar 18, 2012 - inet_ntop&pton now supports IPv6 on all platforms
 # Ver 0.2.7 - May 12, 2012 - Grouped, Float support
 # Ver 0.2.8 - May 25, 2012 - EAP functions moved to separate source
+# Ver 0.3.1 - Nov 12, 2012 - bugfix in encoding grouped list (fixed wrong length)

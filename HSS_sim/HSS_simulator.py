@@ -6,7 +6,7 @@
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
-# HSS Simulator build upon libDiameter 
+# HSS Simulator (single client) build upon libDiameter 
 # interrupt the program with Ctrl-C
 
 #Next two lines include parent directory for where libDiameter is located
@@ -139,7 +139,6 @@ def create_SAA(H):
     SAA_avps.append(encodeAVP("Origin-Host", ORIGIN_HOST))
     SAA_avps.append(encodeAVP("Origin-Realm", ORIGIN_REALM))
     SAA_avps.append(encodeAVP("Session-Id", sesID))
-    SAA_avps.append(encodeAVP("User-Name", userName))
     SAA_avps.append(encodeAVP("User-Name", userName))
     # Grouped AVPs are encoded like this
     #SAA_avps.append(encodeAVP("Vendor-Specific-Application-Id",[
@@ -290,4 +289,5 @@ if __name__ == "__main__":
 # 0.2.7 - Sep 28, 2012 - initial version
 # 0.2.8 - Oct 04, 2012 - tested radius SIM/AKA OK
 # 0.2.9 - Oct 10, 2012 - added SAR/SAA
+# 0.3.0 - Nov 10, 2012 - fixed SAA
 

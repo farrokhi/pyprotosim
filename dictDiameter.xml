@@ -97,7 +97,42 @@
     <avp code="4" name="NAS-IP-Address" type="OctetString" mandatory="must"/>
     <avp code="5" name="NAS-Port" type="Unsigned32" mandatory="must"/>
     <avp code="6" name="Service-Type" type="Enumerated" mandatory="must"/>
+        <enum code="0" name="Unknown"/>
+        <enum code="1" name="Login"/>
+        <enum code="2" name="Framed"/>
+        <enum code="3" name="Callback-Login"/>
+        <enum code="4" name="Callback-Framed"/>
+        <enum code="5" name="Outbound"/>
+        <enum code="6" name="Administrative"/>
+        <enum code="7" name="NAS-Prompt"/>
+        <enum code="8" name="Authenticate-Only"/>
+        <enum code="9" name="Callback-NAS-Prompt"/>
+        <enum code="10" name="Call Check"/>
+        <enum code="11" name="Callback Administrative"/>
+        <enum code="12" name="Voice"/>
+        <enum code="13" name="Fax"/>
+        <enum code="14" name="Modem Relay"/>
+        <enum code="15" name="IAPP-Register"/>
+        <enum code="16" name="IAPP-AP-Check"/>
+        <enum code="17" name="Authorize Only"/>
+        <enum code="18" name="Framed-Management"/>
+    </avp>
     <avp code="7" name="Framed-Protocol" type="Enumerated" mandatory="must"/>
+        <enum code="1" name="PPP"/>
+        <enum code="2" name="SLIP"/>
+        <enum code="3" name="ARAP"/>
+        <enum code="4" name="Gandalf"/>
+        <enum code="5" name="Xylogics"/>
+        <enum code="6" name="X.75"/>
+        <enum code="7" name="GPRS PDP Context"/>
+        <enum code="255" name="Ascend-ARA"/>
+        <enum code="256" name="MPP"/>
+        <enum code="257" name="EURAW"/>
+        <enum code="258" name="EUUI"/>
+        <enum code="259" name="X25"/>
+        <enum code="260" name="COMB"/>
+        <enum code="261" name="FR"/>
+    </avp>
     <avp code="8" name="Framed-IP-Address" type="IPAddress" mandatory="must"/>
     <avp code="9" name="Framed-IP-Netmask" type="IPAddress" mandatory="must"/>
     <avp code="10" name="Framed-Routing" type="Enumerated" mandatory="must"/>
@@ -210,7 +245,7 @@
     <avp code="121" name="Digest-HA1" type="UTF8String"/>
     <avp code="122" name="SIP-AOR" type="UTF8String"/>
     <avp code="123" name="Delegated-IPv6-Prefix" type="OctetString"/>
-    <avp code="124" name="MIP6-Feature-Vector" type="Unsigned64"/>
+    <avp code="124" name="MIP6-Feature-Vector" type="Unsigned64" mandatory="must"/>
     <avp code="125" name="MIP6-Home-Link-Prefix" type="OctetString"/>
     <avp code="126" name="Operator-Name" type="OctetString"/>
     <avp code="127" name="Location-Information" type="OctetString"/>
@@ -1261,7 +1296,7 @@
     <avp code="1497" vendor-id="TGPP" name="MME-User-State" type="Grouped" mandatory="must"/>
     <avp code="1498" vendor-id="TGPP" name="SGSN-User-State" type="Grouped" mandatory="must"/>
     <avp code="1499" vendor-id="TGPP" name="User-State" type="Enumerated"/>
-    <avp code="1500" vendor-id="TGPP" name="Non-3GPP-User-Data" type="Grouped"/>
+    <avp code="1500" vendor-id="TGPP" name="Non-3GPP-User-Data" type="Grouped" mandatory="must"/>
     <avp code="1501" vendor-id="TGPP" name="Non-3GPP-IP-Access" type="Enumerated"/>
     <avp code="1502" vendor-id="TGPP" name="Non-3GPP-IP-Access-APN" type="Enumerated"/>
     <avp code="1503" vendor-id="TGPP" name="AN-Trusted" type="Enumerated"/>
