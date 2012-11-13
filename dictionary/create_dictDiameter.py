@@ -46,27 +46,28 @@ def LoadDictionary(file,tag,vtag):
         vtag=vId
         if vtag==vId:
             processed=False
-            #if Type=='Enumerated':
-               # Find all enumerated parts
-               # print '<avp code='+Q(Code)+V(vId)+' name='+Q(Name)+' type='+Q(Type)+M(Mand)+'>'
-               # enumObj=avp.getElementsByTagName('enum')
-               # if enumObj.length!=0:
-               #     for enum in enumObj:
-               #         eName=enum.getAttribute('name')
-               #         eCode=enum.getAttribute('code')
-               #         print '    <enum code='+Q(eCode)+' name='+Q(eName)+'/>'
-               # print '</avp>'
-               # processed=True
-            #if Type=='':
-               # Find all grouped parts
-               # print '<avp code='+Q(Code)+V(vId)+' name='+Q(Name)+' type='+Q('Grouped')+M(Mand)+'>'
-               # groupObj=avp.getElementsByTagName('gavp')
-               # if groupObj.length!=0:
-               #     for gavp in groupObj:
-               #         eName=gavp.getAttribute('name')
-               #         print '    <gavp name='+Q(eName)+'/>'
-               # print '</avp>'
-               # processed=True
+            if Type=='Enumerated':
+                # Find all enumerated parts
+                print '<avp code='+Q(Code)+V(vId)+' name='+Q(Name)+' type='+Q(Type)+M(Mand)+'>'
+                enumObj=avp.getElementsByTagName('enum')
+                if enumObj.length!=0:
+                    for enum in enumObj:
+                        eName=enum.getAttribute('name')
+                        eCode=enum.getAttribute('code')
+                        print '    <enum code='+Q(eCode)+' name='+Q(eName)+'/>'
+                print '</avp>'
+                processed=True
+            if Type=='':
+                Type='Grouped'
+                # print '<avp code='+Q(Code)+V(vId)+' name='+Q(Name)+' type='+Q('Grouped')+M(Mand)+'>'
+                # Find all grouped parts
+                # groupObj=avp.getElementsByTagName('gavp')
+                # if groupObj.length!=0:
+                #     for gavp in groupObj:
+                #         eName=gavp.getAttribute('name')
+                #         print '    <gavp name='+Q(eName)+'/>'
+                # print '</avp>'
+                # processed=True
             if not processed:
                print '<avp code='+Q(Code)+V(vId)+' name='+Q(Name)+' type='+Q(Type)+M(Mand)+'/>'
 
@@ -84,8 +85,8 @@ if __name__ == "__main__":
         if fname.endswith(".xml"):
             if fname in skip:
                 print "SKIPPING"
-            #else:
-            #    LoadDictionary(DIR+"/"+fname,"avp","")
+            else:
+                LoadDictionary(DIR+"/"+fname,"avp","")
 
 
 
