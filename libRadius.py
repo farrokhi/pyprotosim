@@ -2,7 +2,7 @@
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 - 
-# Version 0.3, Last change on Oct 24, 2012
+# Version 0.3.1, Last change on Nov 14, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
@@ -515,7 +515,6 @@ def encode_TPasswd(A,data):
     ret=struct.pack(fs,data).encode("hex")
     pktlen=2+len(ret)/2
     return encode_finish(A,pktlen,ret)    
-
    
 def do_encode(A,data):
     if A.type in asUTF8:
@@ -567,7 +566,8 @@ def getAVPDef(AVP_Name,AVP_Value):
     logging.debug(dbg)
     return do_encode(A,data) 
 
-# Main entry for encoding all types in form Name=Value    
+################################
+# Main encoding routine     
 def encodeAVP(AVP_Name,AVP_Value):
     dbg="Packing AVP",AVP_Name,AVP_Value
     logging.info(dbg)
@@ -583,8 +583,9 @@ def encodeAVP(AVP_Name,AVP_Value):
     return msg    
 
 #----------------------------------------------------------------------
-
-# Main entry for decoding raw message into AVPs
+################################
+# Main decoding routine  
+# Input: single AVP as HEX string
 def decodeAVP(msg):
     (scode,msg)=chop_msg(msg,2)
     (slen,msg)=chop_msg(msg,2)
@@ -663,7 +664,8 @@ def decodeAVP(msg):
     logging.info(dbg)
     return (A.name,ret)
 
-# In decoded answer search for AVP name    
+# Search for AVP in undecoded list
+# Return value if exist, ERROR if not   
 def findAVP(what,list):
     for avp in list:
         if isinstance(avp,tuple):
@@ -695,7 +697,8 @@ def joinAVPs(avps):
     for avp in avps:
         data=data+avp
     return data
-    
+
+# Create radius packet    
 def createPacket(H):
     # since all data is hex ecoded, divide by 2 and add header length
     H.len=len(H.msg)/2+20
@@ -706,13 +709,15 @@ def createPacket(H):
     dbg="Radius hdr+data",ret
     logging.debug(dbg)
     return ret
-    
+
+# Create message authenticator    
 def createAuthenticator():
     ret=''
     for i in range(16):
         ret=ret+chr(random.randrange(0, 256))
     return ret
 
+# Create response authenticator
 def calcAuthenticator(H,auth,secret):
     #ResponseAuth = MD5(Code+ID+Length+RequestAuth+Attributes+Secret)
     mlen=len(H.msg)/2+20
@@ -720,13 +725,17 @@ def calcAuthenticator(H,auth,secret):
     msg=msg+"%32X"%auth+H.msg+secret.encode("hex")
     m=md5_constructor(msg.decode("hex")).digest()
     return m
-    
+ 
+# Create radius Request from <avps> and fields from Header H  
 def createReq(H,avps):
     H.msg=joinAVPs(avps)
+    # Authenticator should be inserted when encoding password
+    # So it is disabled here
     #H.Authenticator=createAuthenticator()
     ret=createPacket(H)
     return ret
-    
+
+# Create diameter Response from <avps> and fields from Header H     
 def createRes(H,auth,avps):
     H.msg=joinAVPs(avps)
     H.authenticator=calcAuthenticator(H,auth,secret)
@@ -734,7 +743,10 @@ def createRes(H,auth,avps):
     return 0
 
 #---------------------------------------------------------------------- 
-    
+# Main message decoding routine
+# Input: radius message as HEX string    
+# Result: class H with splitted message (header+message)
+# AVPs in message are NOT splitted    
 def stripHdr(H,msg):
     dbg="Incoming Radius msg",msg
     logging.debug(dbg)
@@ -754,7 +766,10 @@ def stripHdr(H,msg):
     logging.info(dbg)
     H.msg=msg
     return 
-    
+ 
+# Split AVPs from message
+# Input: H.msg as hex string
+# Result: list of undecoded AVPs 
 def splitMsgAVPs(msg):
     ret=[]
     dbg="Incoming avps",msg
@@ -769,7 +784,8 @@ def splitMsgAVPs(msg):
     return ret
 
 #---------------------------------------------------------------------- 
-    
+
+# Decrypt radius password    
 def PwDecrypt(password,authenticator,secret):
     buf = password
     pw = ''
@@ -783,6 +799,7 @@ def PwDecrypt(password,authenticator,secret):
         pw = pw[:-1]
     return pw.decode('utf-8')
 
+# Encrypt radius password    
 def PwCrypt(password,authenticator,secret):
     #Call the shared secret S and the pseudo-random 128-bit Request
     #Authenticator RA.  Break the password into 16-octet chunks p1, p2,
@@ -810,6 +827,7 @@ def PwCrypt(password,authenticator,secret):
         buf = buf[16:]
     return result
 
+# CHAP password    
 def ChapPwCrypt(id,password,authenticator):
     #The RADIUS server looks up a password based on the User-Name,
     #encrypts the challenge using MD5 on the CHAP ID octet, that password,
@@ -822,6 +840,7 @@ def ChapPwCrypt(id,password,authenticator):
         result += _pwd[i]
     return result    
 
+# Password for Tunneled AVPs    
 def TunnelPwCrypt(password,authenticator,salt,secret):
     #Call the shared secret S, the pseudo-random 128-bit Request
     #Authenticator (from the corresponding Access-Request packet) R,
@@ -839,6 +858,7 @@ def TunnelPwCrypt(password,authenticator,salt,secret):
     return PwCrypt(password,authenticator+salt,secret)
 
 #---------------------------------------------------------------------- 
+# DateTime routines
 
 def getCurrentDateTime():
     t=time.localtime()
@@ -876,5 +896,6 @@ def encode_GeoLoc(LocType,MCC,MNC,LAC,CI):
 # Ver 0.3   - Oct 24, 2012 - Radius tunnel AVP support added
 #           - Oct 30, 2012 - decoding vendor-specific attributes case mismatch fixed
 #           - Oct 31, 2012 - converting time to/from epoch added
-# Ver 0.3.1 - Nov 13, 2012 - bugfix in pack_addr (if IPvg starts with :)
+# Ver 0.3.1 - Nov 13, 2012 - bugfix in pack_addr (if IPv6 starts with ":")
 #                          - encodeGeoLoc added
+#                          - comments added
