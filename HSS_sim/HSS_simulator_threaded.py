@@ -15,48 +15,70 @@ sys.path.append("..")
 # Remove them if everything is in the same dir
 
 import socket
+import thread
 import select
 import logging
+import Queue
 from libDiameter import *
 
 SKIP=0
 
-def handle_HSS(conn):
-    global sock_list
-    # conn is the TCP socket connected to the client
-    dbg="Connection:",conn.getpeername(),'to',conn.getsockname()
+def handle_msg(conn,data):
+    dbg="handle_msg:Handling",len(data)
     logging.info(dbg)
-    #get input ,wait if no data
-    data=conn.recv(BUFFER_SIZE)
-    #suspect more data (try to get it all without stopping if no data)
-    if (len(data)==BUFFER_SIZE):
-        while 1:
-            try:
-                data+=self.request.recv(BUFFER_SIZE, socket.MSG_DONTWAIT)
-            except:
-                #error means no more data
-                break
-    if (data != ""): 
-        #processing input
-        dbg="Incomming message",data.encode("hex")
-        logging.info(dbg)
-        ret=process_request(data.encode("hex")) 
-        if ret==ERROR:
-            dbg="Error responding",ret
-            logging.error(dbg)
-        else:
-            if ret==SKIP:
-                dbg="Skipping response",ret
-                logging.info(dbg)                
-            else:
-                dbg="Sending response",ret
-                logging.info(dbg)
-                conn.send(ret.decode("hex"))    
+    ret=process_request(data.encode("hex"))
+    logging.info("handle_msg:REQ processed")
+    if ret==ERROR:
+        dbg="Error responding",ret
+        logging.error(dbg)
     else:
-        #no data found exit loop (posible closed socket)        
-        # remove it from sock_list
-        sock_list.remove(conn)
-        conn.close()
+        if ret==SKIP:
+            dbg="Skipping response",ret
+            logging.info(dbg)                
+        else:
+            dbg="handle_msg:Sending response",ret
+            logging.info(dbg)
+            conn.send(ret.decode("hex")) 
+                        
+def handle_HSS(aaa,addr):
+    # conn is the TCP socket connected to the client
+    while True:
+        try:
+            read, write, error = select.select([aaa],[],[],SOCK_TIMEOUT)
+        except:
+            logging.info("After select except")
+            break
+        for r in read:
+            #get input ,wait if no data
+            logging.info("handle_HSS:We have incoming data")
+            data=r.recv(BUFFER_SIZE)
+            #suspect more data (try to get it all without stopping if no data)
+            if (len(data)==BUFFER_SIZE):
+                while 1:
+                    try:
+                        data+=r.recv(BUFFER_SIZE, socket.MSG_DONTWAIT)
+                    except:
+                        #error means no more data
+                        break
+            if (data != ""): 
+                #processing input
+                dbg="handle_HSS:Incomming message from ",conn.getpeername(),"size",len(data)
+                logging.info(dbg)
+                handle_msg(r,data)
+                logging.info("handle_HSS:handle_msg done")
+            else:
+                # Connection closed?
+                return
+        if not CMDOut.empty():
+            print "handle_HSS:Processing CMD"
+            cmd=CMDOut.get()
+            dbg="handle_HSS:Read from Qo",cmd
+            logging.info(dbg)
+            ret=process_CMD(cmd)
+            dbg="handle_HSS:Processed ",ret
+            logging.info(dbg)
+            if ret!=ERROR:
+                aaa.send(ret.decode("hex"))
 
 def handle_CMD(srv):
     conn,address=srv.accept()
@@ -72,18 +94,22 @@ def handle_CMD(srv):
                 break
     if (data != ""): 
         #processing input
-        dbg="Incomming CMD",data.encode("hex")
+        dbg="handle_CMD:Incomming CMD",data.encode("hex")
         logging.info(dbg)
-        ret=process_CMD(data.encode("hex")) 
-        if ret==ERROR:
-            dbg="Quitting",ret
-            logging.error(dbg)
-            conn.close()
-            return ERROR
-        else:
-            dbg="Sending command",ret
+        CMDOut.put(data.encode("hex"))
+        dbg="handle_CMD:Put in Qo",data.encode("hex")
+        logging.info(dbg)
+        try:
+            data=CMDIn.get(True,4)
+            dbg="handle_CMD:Read from Qi",data
             logging.info(dbg)
-            sock_list[-1].send(ret.decode("hex"))    
+        except:
+            data=""
+        ret=process_CMD(data) 
+        if ret!=ERROR:
+            dbg="handle_CMD:Sending command",ret
+            logging.info(dbg)
+            conn.send(ret.decode("hex"))    
     conn.close()
     return 
     
@@ -176,10 +202,33 @@ def create_SAA(H):
         encodeAVP("Vendor-Id",dictVENDORid2code('TGPP')),
         encodeAVP("Auth-Application-Id",H.appId)]))
     SAA_avps.append(encodeAVP("Auth-Session-State", 1)) # 1 - NO_STATE_MAINTAINED    
-    SAA_avps.append(encodeAVP("Result-Code", 2001))   #DIAMETER_SUCCESS 2001
+    SAA_avps.append(encodeAVP("Result-Code", 2001))     # 2001 - DIAMETER_SUCCESS
     if saType==1:   #REGISTRATION
         #Non-3GPP-User-Data
-        SAA_avps.append("000005dcc0000114000028af000001bb4000002c000001bc4000001731323131313232323230303036323300000001c24000000c00000000000005ddc0000010000028af00000000000005dec0000010000028af000000000000007c40000010000000000000000100000596c000009c000028af0000058fc0000010000028af00000001000001ed4000000a61310000000005b0c0000010000028af000000000000059bc000002c000028af00000204c0000010000028af000001f400000203c0000010000028af000001f400000597c0000038000028af00000404c0000010000028af000000010000040ac000001c000028af00000416c0000010000028af000000000000058fc0000010000028af00000000")
+        SAA_avps.append(encodeAVP('Non-3GPP-User-Data', [
+            encodeAVP('Subscription-Id', [
+                encodeAVP('Subscription-Id-Data', '121112222000623'),
+                encodeAVP('Subscription-Id-Type', 0)]), 
+            encodeAVP('Non-3GPP-IP-Access', 0),
+            encodeAVP('Non-3GPP-IP-Access-APN', 0),
+            encodeAVP('MIP6-Feature-Vector', 1),
+            encodeAVP('APN-Configuration', [
+                encodeAVP('Context-Identifier', 1), 
+                encodeAVP('Service-Selection', 'a1'), 
+                encodeAVP('PDN-Type', 0), 
+                encodeAVP('AMBR', [
+                    encodeAVP('Max-Requested-Bandwidth-UL', 500), 
+                    encodeAVP('Max-Requested-Bandwidth-DL', 500)
+                ]), 
+                encodeAVP('EPS-Subscribed-QoS-Profile', [
+                    encodeAVP('QoS-Class-Identifier', 1), 
+                    encodeAVP('Allocation-Retention-Priority', [
+                        encodeAVP('Priority-Level', 0)
+                    ])
+                ])
+            ]),
+            encodeAVP('Context-Identifier', 0)
+        ]))
     # Create message header (empty)
     SAA=HDRItem()
     # Set command code
@@ -258,11 +307,11 @@ def appendToCMD(H):
     return ret
 
 def process_CMD(rawdata):
-    dbg="Processing CMD",rawdata
+    dbg="process_CMD:Processing CMD",rawdata
     logging.info(dbg)
     if rawdata[:2]=="01":
         #Diammeter command
-        logging.info("Processing diameter request")
+        logging.info("process_CMD:Processing diameter request")
         H=HDRItem()
         stripHdr(H,rawdata)
         return appendToCMD(H)
@@ -272,11 +321,12 @@ def process_CMD(rawdata):
 def process_request(rawdata):
     H=HDRItem()
     stripHdr(H,rawdata)
-    dbg="Processing",dictCOMMANDcode2name(H.flags,H.cmd)
+    dbg="process_request:Processing",dictCOMMANDcode2name(H.flags,H.cmd)
     logging.info(dbg)
     if H.flags & DIAMETER_HDR_REQUEST==0:
         # If Answer no need to do anything
         # Messages HSS->AAA are send with external put_*.py script
+        CMDIn.put(rawdata)
         return SKIP
     if H.cmd==257:  # Capabilities-Exchange
         return create_CEA(H)
@@ -321,11 +371,11 @@ def getQuintet(UserName,NumOfItems,AuthScheme):
             encodeAVP("SIP-Authenticate","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb52bdc449bce0800098c737a73bc7c191".decode("hex"))
              ]))
     return ret
-    
+
 def Quit():
-    for conn in sock_list:
-        conn.close()
-    sys.exit(0)
+    HSS_server.close()
+    CMD_server.close()
+    sys.exit()
     
 if __name__ == "__main__":
     # level for decoding are: DEBUG, INFO, WARNING, ERROR, CRITICAL
@@ -347,15 +397,16 @@ if __name__ == "__main__":
 
     BUFFER_SIZE=1024    
     MAX_CLIENTS=3
-    sock_list=[]
+    SOCK_TIMEOUT=0.5
    
+    CMDIn=Queue.Queue()
+    CMDOut=Queue.Queue()
     # Create the server, binding to HOST:DIAM_PORT
     HSS_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # fix "Address already in use" error upon restart
     HSS_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     HSS_server.bind((HOST, DIAM_PORT))  
     HSS_server.listen(MAX_CLIENTS)
-    sock_list.append(HSS_server)
 
     # Create the server, binding to HOST:CMD_PORT
     CMD_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -363,33 +414,23 @@ if __name__ == "__main__":
     CMD_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     CMD_server.bind((HOST, CMD_PORT))  
     CMD_server.listen(MAX_CLIENTS)
-    sock_list.append(CMD_server)
     logging.info("Server started")
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
     while True:
         try:
-            read, write, error = select.select(sock_list,[],[],1)
+            read, write, error = select.select([HSS_server,CMD_server],[],[])
         except:
             break
         for r in read:
             logging.info("Incoming data")
             # First handle command connection to CMD_server
             if r==CMD_server:
-                if handle_CMD(CMD_server)==ERROR:
-                    logging.info("Exiting")
-                    Quit()
+                handle_CMD(CMD_server)
             else:
-                # Is it new or existing connection
-                if r==HSS_server:
-                    # New connections: accept on new socket
-                    conn,addr=HSS_server.accept()
-                    sock_list.append(conn)
-                    if handle_HSS(conn)==ERROR:
-                        Quit()
-                else:
-                    if handle_HSS(r)==ERROR:
-                        Quit()
+                # New connections: accept on new socket
+                conn,addr=HSS_server.accept()
+                thread.start_new_thread(handle_HSS,(conn,addr))
     Quit()
 
 ######################################################        

@@ -52,7 +52,7 @@ if __name__ == "__main__":
     #logging.basicConfig(level=logging.DEBUG)
     LoadDictionary("../dictDiameter.xml")
     ################
-    HOST="localhost"
+    HOST="10.14.5.148"
     PORT=3869
     IDENTITY="262022503508143"                        
     # 3GPP  SWx=16777265  STa=16777250  S6b=16777272  Wx=16777219
@@ -70,6 +70,7 @@ if __name__ == "__main__":
     Conn.send(msg.decode("hex"))
     # Receive response
     received = Conn.recv(MSG_SIZE)
+    print received.encode("hex")
     ###########################################################
     # And close the connection
     Conn.close()
