@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
-# February 2012 - May 2012
-# Version 0.2.7, Last change on May 12, 2012
+# February 2012 - Nov 2012
+# Version 0.3.1, Last change on Nov 14, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
@@ -55,7 +55,10 @@ class HDRItem:
 utf8encoder=codecs.getencoder("utf_8")
 utf8decoder=codecs.getdecoder("utf_8")
 
-# Load dictionary
+#----------------------------------------------------------------------
+# Dictionary routines
+
+# Load simplified dictionary from <file>
 def LoadDictionary(file):
     global dict_avps
     global dict_vendors
@@ -111,7 +114,8 @@ def LoadDictionary(file):
         if tType in asTime:
            asTime.append(tName)   
         
-# Find AVP definition in dictionary
+# Find AVP definition in dictionary: User-Name->1
+# on finish A contains all data
 def dictAVPname2code(A,avpname,avpvalue):
     dbg="Searching dictionary for N",avpname,"V",avpvalue
     logging.debug(dbg)
@@ -130,7 +134,8 @@ def dictAVPname2code(A,avpname,avpvalue):
     dbg="Searching dictionary failed for N",avpname,"V",avpvalue
     bailOut(dbg)
 
-# Find AVP definition in dictionary
+# Find AVP definition in dictionary: 1->User-Name
+# on finish A contains all data
 def dictAVPcode2name(A,avpcode,vendorcode):
     dbg="Searching dictionary for ","C",avpcode,"V",vendorcode
     logging.debug(dbg)
@@ -151,7 +156,8 @@ def dictAVPcode2name(A,avpcode,vendorcode):
     A.name="Unknown Attr-"+str(A.code)+" (Vendor:"+A.vendor+")"
     A.type="OctetString"
     return 
-    
+
+# Find Vendor definition in dictionary: 10415->TGPP    
 def dictVENDORcode2id(code):
     dbg="Searching Vendor dictionary for C",code
     logging.debug(dbg)
@@ -163,6 +169,7 @@ def dictVENDORcode2id(code):
     dbg="Searching Vendor dictionary failed for C",code
     bailOut(dbg)
 
+# Find Vendor definition in dictionary: TGPP->10415    
 def dictVENDORid2code(vendor_id):
     dbg="Searching Vendor dictionary for V",vendor_id
     logging.debug(dbg)
@@ -174,6 +181,7 @@ def dictVENDORid2code(vendor_id):
     dbg="Searching Vendor dictionary failed for V",vendor_id
     bailOut(dbg)
 
+# Find Command definition in dictionary: Capabilities-Exchange->257    
 def dictCOMMANDname2code(name):
     for command in dict_commands:
          cName=command.getAttribute("name")
@@ -183,6 +191,7 @@ def dictCOMMANDname2code(name):
     dbg="Searching CMD dictionary failed for N",name
     bailOut(dbg)
 
+# Find Command definition in dictionary: 257->Capabilities-Exchange
 def dictCOMMANDcode2name(flags,code):
     cmd=ERROR
     for command in dict_commands:
@@ -279,11 +288,11 @@ def pack_address(address):
     # addrs=socket.getaddrinfo(address, None)
     # This is NOT a proper code, but it will do for now
     # unfortunately, getaddrinfo does not work on windows with IPv6
-    if address.find('.')>0:
+    if address.find('.')!=ERROR:
         raw = inet_pton(socket.AF_INET,address);
         d=struct.pack('!h4s',1,raw)
         return d
-    if address.find(':')>0:
+    if address.find(':')!=ERROR:
         raw = inet_pton(socket.AF_INET6,address);
         d=struct.pack('!h16s',2,raw)
         return d
@@ -361,6 +370,7 @@ def chop_msg(msg,size):
     return (msg[0:size],msg[size:])
     
 #----------------------------------------------------------------------    
+
 #    0                   1                   2                   3
 #    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 #   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -373,6 +383,8 @@ def chop_msg(msg,size):
 #   |    Data ...
 #   +-+-+-+-+-+-+-+-+
 
+# Common finish routine for all encoded AVPs
+# Result is properly encoded AVP as hex string (padding is added separately)
 def encode_finish(A,flags,pktlen,data):
     ret=data
     if A.vendor!=0:
@@ -444,7 +456,7 @@ def checkMandatory(mandatory):
     if mandatory=="must":
         flags|=DIAMETER_FLAG_MANDATORY
     return flags
-
+    
 def do_encode(A,flags,data):
     if A.type in asUTF8:
         return encode_UTF8String(A,flags,data)
@@ -490,9 +502,9 @@ def getAVPDef(AVP_Name,AVP_Value):
     flags=checkMandatory(A.mandatory)
     return do_encode(A,flags,data)
 
+################################
+# Main encoding routine  
 def encodeAVP(AVP_Name,AVP_Value):
-    dbg="Packing AVP",AVP_Name,AVP_Value
-    logging.info(dbg)
     if type(AVP_Value).__name__=='list':
         p=''
         for x in AVP_Value:
@@ -502,7 +514,7 @@ def encodeAVP(AVP_Name,AVP_Value):
         msg=getAVPDef(AVP_Name,p.decode("hex"))
     else:
         msg=getAVPDef(AVP_Name,AVP_Value)
-    dbg="Encoded as:",msg
+    dbg="AVP",AVP_Name,AVP_Value,"Encoded as:",msg
     logging.info(dbg)
     return msg
 
@@ -511,7 +523,9 @@ def calc_padding(msg_len):
     return (msg_len+3)&~3 
 
 #----------------------------------------------------------------------    
-
+################################
+# Main decoding routine  
+# Input: single AVP as HEX string
 def decodeAVP(msg):
     (scode,msg)=chop_msg(msg,8)
     (sflag,msg)=chop_msg(msg,2)
@@ -580,6 +594,8 @@ def decodeAVP(msg):
     logging.info(dbg)
     return (A.name,ret)
 
+# Search for AVP in undecoded list
+# Return value if exist, ERROR if not    
 def findAVP(what,list):
     for avp in list:
         if isinstance(avp,tuple):
@@ -608,6 +624,7 @@ def findAVP(what,list):
 #   |  AVPs ...
 #   +-+-+-+-+-+-+-+-+-+-+-+-+-
 
+# Join AVPs (add padding)
 def joinAVPs(avps):
     data=""
     for avp in avps:
@@ -616,14 +633,17 @@ def joinAVPs(avps):
         data=data+avp
     return data
 
+# Set flags to desired state    
 def setFlags(H,flag):
     H.flags|=flag
     return
-    
+
+# Create diameter Request from <avps> and fields from Header H    
 def createReq(H,avps):
     H.flags|=DIAMETER_HDR_REQUEST
     return createRes(H,avps)
 
+# Create diameter Response from <avps> and fields from Header H     
 def createRes(H,avps):
     # first add all avps into single string
     data=joinAVPs(avps)
@@ -637,6 +657,7 @@ def createRes(H,avps):
     logging.debug(dbg)
     return ret
 
+# Set Hop-by-Hop and End-to-End fields to sane values    
 def initializeHops(H):
     # Not by RFC, but close enough
     try:
@@ -650,10 +671,16 @@ def initializeHops(H):
     return 
     
 #---------------------------------------------------------------------- 
-    
+
+# Main message decoding routine
+# Input: diameter message as HEX string    
+# Result: class H with splitted message (header+message)
+# AVPs in message are NOT splitted
 def stripHdr(H,msg):
     dbg="Incoming Diameter msg",msg
-    logging.debug(dbg)
+    logging.info(dbg)
+    if len(msg)==0:
+        return ERROR
     (sver,msg)=chop_msg(msg,2)
     (slen,msg)=chop_msg(msg,6)
     (sflag,msg)=chop_msg(msg,2)
@@ -677,6 +704,9 @@ def stripHdr(H,msg):
     H.msg=msg
     return 
 
+# Split AVPs from message
+# Input: H.msg as hex string
+# Result: list of undecoded AVPs
 def splitMsgAVPs(msg):
     ret=[]
     dbg="Incoming avps",msg
@@ -688,17 +718,34 @@ def splitMsgAVPs(msg):
       plen=calc_padding(mlen)
       (avp,msg)=chop_msg(msg,2*plen)
       dbg="Single AVP","L",mlen,plen,"D",avp
-      logging.debug(dbg)
+      logging.info(dbg)
       ret.append(avp)
     return ret
 
 #---------------------------------------------------------------------- 
-    
+ 
+# Connect to host:port (TCP) 
 def Connect(host,port):
     # Create a socket (SOCK_STREAM means a TCP socket)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
     return sock
+    
+#---------------------------------------------------------------------- 
+# DateTime routines
+
+def getCurrentDateTime():
+    t=time.localtime()
+    return t.tm_year,t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec
+
+# converts to seconds since epoch
+def epoch2date(sec):
+    t=time.localtime(sec)
+    return t.tm_year,t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec
+
+def date2epoch(tYear,tMon,tDate,tHr,tMin,tSec):  
+    t=time.strptime("{0} {1} {2} {3} {4} {5}".format(tYear,tMon,tDate,tHr,tMin,tSec),"%Y %m %d %H %M %S")
+    return time.mktime(t)    
 
 ######################################################        
 # History
@@ -715,3 +762,6 @@ def Connect(host,port):
 # Ver 0.2.7 - May 12, 2012 - Grouped, Float support
 # Ver 0.2.8 - May 25, 2012 - EAP functions moved to separate source
 # Ver 0.3.1 - Nov 12, 2012 - bugfix in encoding grouped list (fixed wrong length)
+#                          - ipv6 encoding bugfix
+#                          - comments added
+#                          - logging levels modified
