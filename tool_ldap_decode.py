@@ -2,7 +2,7 @@
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 - November 2012
-# Version 0.2.8, Last change on Nov 10, 2012
+# Version 0.3.1, Last change on Nov 15, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
@@ -12,8 +12,6 @@ from libLdap import *
 import sys
 
 if __name__ == "__main__":
-    # level for decoding are: DEBUG, INFO, WARNING, ERROR, CRITICAL
-    logging.basicConfig(level=logging.DEBUG)
     msg=sys.argv[1]
     print "="*30
     opt=decodeMSG(msg)
@@ -49,13 +47,29 @@ if __name__ == "__main__":
         print L.code    
         print "objectName",L.objectName
         print "attributes",L.attributes   
-    if appId==5:
+    if appId in [5,7,9,11]:
         print "messageId:",L.messageId
         print L.code
         print L.result
         print "matchedDN",L.matchedDN
         print "errorMSG",L.errorMSG       
-
+    if appId==6:
+        print "messageId:",L.messageId
+        print L.code
+        print "objectName",L.objectName
+        print "operation",L.operation
+        print "modification",L.modification 
+    if appId==8:
+        print "messageId:",L.messageId
+        print L.code    
+        print "objectName",L.objectName
+        print "attributes",L.attributes     
+    if appId==10:
+        print "messageId:",L.messageId
+        print L.code    
+        print "objectName",L.objectName
     
-       
-    
+######################################################        
+# History
+# 0.2.9 - Oct 11, 2012 - initial version
+# 0.3.1 - Nov 15, 2012 - add/delete/modify support

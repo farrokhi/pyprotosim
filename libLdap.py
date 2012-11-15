@@ -2,7 +2,7 @@
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 -
-# Version 0.3.1, Last change on Oct 26, 2012
+# Version 0.3.1, Last change on Nov 15, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
@@ -101,15 +101,14 @@ dict_APP= {'bindRequest': 0,
            'searchRequest':3,
            'searchResultEntry':4,
            'searchResultDone':5,
-           'searchResultReference':6,
-           'modifyRequest':7,
-           'modifyResponse':8,
-           'addRequest':9,
-           'addResponse':10,
-           'delRequest':11,
-           'delResponse':12,
-           'modifyDNRequest':13,
-           'modifyDNResponse':14,
+           'modifyRequest':6,
+           'modifyResponse':7,
+           'addRequest':8,
+           'addResponse':9,
+           'delRequest':10,
+           'delResponse':11,
+           'modifyDNRequest':12,
+           'modifyDNResponse':13,
            'compareRequest':15,
            'compareResponse':16,
            'abandonRequest':17,
@@ -151,6 +150,28 @@ class searchRes:
         self.code=code
         self.objectName=objectN
         self.attributes=attr
+
+class modifyReq:
+    def __init__(self):
+        self.messageId=0
+        self.code=0
+        self.objectName=""
+        self.operation=0
+        self.modification=""
+        # controls are omitted at this moment (until I can figure them out)
+        
+class addReq:
+    def __init__(self):
+        self.messageId=0
+        self.code=0
+        self.objectName=""
+        self.attributes=""
+        
+class delReq:
+    def __init__(self):
+        self.messageId=0
+        self.code=0
+        self.objectName=""
         
 class HDRItem:
     def __init__(self,msgId=0,code=0,isApp=0,appId=0,msg=""):
@@ -161,6 +182,7 @@ class HDRItem:
         self.msg=msg
     
 #-----------------------------------------------------------------------------
+# From RFC:
 #- Only the definite form of length encoding is used.
 #- OCTET STRING values are encoded in the primitive form only.
 #- If the value of a BOOLEAN type is true, the encoding of the value octet is 
@@ -346,8 +368,14 @@ def decodeFinal(msgId,op,list):
         return decode_searchReq(msgId,op,list)
     if tag==4:  # searchResEntry
         return decode_searchResEntry(msgId,op,list)
-    if tag==5:  # searchresDone
+    if tag in [5,7,9,11]:  # searchresDone
         return decode_searchResDone(msgId,op,list)
+    if tag==6:  # modifyReq
+        return decode_modifyReq(msgId,op,list)
+    if tag==8:  # addReq
+        return decode_addReq(msgId,op,list)
+    if tag==10:  # deleteReq
+        return decode_deleteReq(msgId,op,list)        
     dbg="Don't know how to process AppId",tag
     bailOut(dbg)
 
@@ -423,6 +451,63 @@ def decode_searchResDone(msgId,op,list):
     L.matchedDN=decodeValue(list[1][1])
     L.errorMSG=decodeValue(list[1][2])  
     return L
+
+def decode_modifyReq(msgId,op,list):
+    print "LIST:",list
+    i=0
+    for l in list:
+        print i,':',list[i]
+        i+=1
+    L=modifyReq()
+    L.messageId=msgId
+    L.code=op
+    L.objectName=decodeValue(list[1][0])
+    L.operation=decodeValue(list[4][0])
+    att=[]
+    key=""
+    val=""
+    last=0
+    for a in list[5:]:
+        if isinstance(a,str):
+            last=a
+        else:
+            if last=='30':
+                key=decodeValue(a[0])
+            else:
+                for b in a:
+                    value=decodeValue(b)
+                    att.append(key+'='+value)
+    L.modification=att
+    return L
+    
+def decode_addReq(msgId,op,list):
+    L=addReq()
+    L.messageId=msgId
+    L.code=op
+    L.objectName=decodeValue(list[1][0])
+    att=[]
+    key=""
+    val=""
+    last=0
+    for a in list[2:]:
+        if isinstance(a,str):
+            last=a
+        else:
+            if last=='30':
+                key=decodeValue(a[0])
+            else:
+                for b in a:
+                    value=decodeValue(b)
+                    att.append(key+'='+value)
+    L.attributes=att
+    return L
+
+def decode_deleteReq(msgId,op,list):
+    L=searchReq()
+    L.messageId=msgId
+    L.code=op
+    L.objectName=decodeValue(list[1][0])
+    return L    
     
 # Create generic Response message    
 def create_LDAPResult(msgId,code,result,matchedDN,errorMSG):
@@ -454,3 +539,4 @@ def create_LDAPResult(msgId,code,result,matchedDN,errorMSG):
 # 0.3.1 - Nov 05, 2012 - comments added, code cleanup
 #                      - logging removed because it conflicts with threaded
 #                        LDAP simulator
+#                      - add/delete/modify support
