@@ -2,11 +2,12 @@
 <!-- Based on the Wireshark dictionary.xml 2011-07-09 -->
 <!-- Unified command codes to use unique name 2012 May 08 -->
 <!-- EAP codes moved to separate dictionary 2012 May 13 -->
-<!-- Last change 2012 Nov 13 -->
+<!-- Last change 2012 Nov 17 -->
 <dictionary>
     <!-- *********************** Diameter Typedefs ************************* -->
     <!-- Basic types are OctetString, UTF8String, Unsigned32, Integer32 -->
-    <!-- Unsigned64, Integer64, Float32, Float64, IPAddress, Time not yet added to list-->    
+    <!-- Unsigned64, Integer64, Float32, Float64, IPAddress, Time -->  
+    <!-- Enumerated is handled internally as Integer32 -->    
     <typedef name="DiameterIdentity"       type="OctetString"/>
     <typedef name="IPFilterRule"           type="OctetString"/>
     <typedef name="QOSFilterRule"          type="OctetString"/>
@@ -14,7 +15,6 @@
     <typedef name="DiameterURI"            type="UTF8String"/>
     <typedef name="VendorId"               type="Unsigned32"/>
     <typedef name="AppId"                  type="Integer32"/>
-    <typedef name="Enumerated"             type="Integer32"/>
     <!-- *********************** Diameter Commands ************************* -->
     <command code="257" name="Capabilities-Exchange"/> 
     <command code="258" name="Re-Auth"/> 

@@ -2,7 +2,7 @@
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 - Nov 2012
-# Version 0.3.1, Last change on Nov 14, 2012
+# Version 0.3.1, Last change on Nov 17, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
@@ -343,6 +343,13 @@ def decode_OctetString(data,dlen):
     ret=struct.unpack(fs,data.decode("hex")[0:dlen-8])[0]
     return ret
 
+#Hex          Comments
+#0x00..0x7F   Only byte of a 1-byte character encoding
+#0x80..0xBF   Continuation characters (1-3 continuation characters)
+#0xC0..0xDF   First byte of a 2-byte character encoding
+#0xE0..0xEF   First byte of a 3-byte character encoding
+#0xF0..0xF4   First byte of a 4-byte character encoding
+#Note:0xF5-0xFF cannot occur    
 def decode_UTF8String(data,dlen):
     fs="!"+str(dlen-8)+"s"
     dbg="Decoding UTF8 format:",fs
@@ -357,6 +364,12 @@ def decode_Grouped(data):
     for gmsg in splitMsgAVPs(data):
         ret.append(decodeAVP(gmsg))
     return ret
+
+#AVP_Time contains a second count since 1900    
+def decode_Time(data):
+    seconds_between_1900_and_1970 = ((70*365)+17)*86400
+    ret=struct.unpack("!I",data.decode("hex"))[0]
+    return int(ret)-seconds_between_1900_and_1970
     
 #----------------------------------------------------------------------
     
@@ -450,6 +463,30 @@ def encode_Address(A,flags,data):
     pktlen=8+len(ret)/2
     return encode_finish(A,flags,pktlen,ret)
 
+def encode_Enumerated(A,flags,data):
+    if isinstance(data,str):
+        # Replace with enum code value
+        for avp in dict_avps:
+            Name = avp.getAttribute("name")
+            if Name==A.name:
+                for e in avp.getElementsByTagName("enum"):
+                    if data==e.getAttribute("name"):
+                        return encode_Integer32(A,flags,int(e.getAttribute("code")))
+                dbg="Enum name=",data,"not found for AVP",A.name
+                bailOut(dbg)
+    else:
+        return encode_Integer32(A,flags,data)
+    
+#AVP_Time contains a second count since 1900    
+#But unix counts time from EPOCH (1.1.1970)
+def encode_Time(A,flags,data):
+    seconds_between_1900_and_1970 = ((70*365)+17)*86400 
+    r=struct.pack("!I",data+seconds_between_1900_and_1970)
+    ret=r.encode("hex")
+    pktlen=12
+    return encode_finish(A,flags,pktlen,ret)
+
+#----------------------------------------------------------------------     
 #Set mandatory flag as specified in dictionary
 def checkMandatory(mandatory):
     flags=0
@@ -476,6 +513,8 @@ def do_encode(A,flags,data):
         return encode_Address(A,flags,data)
     if A.type in asTime:
         return encode_Time(A,flags,data)
+    if A.type=="Enumerated":
+        return encode_Enumerated(A,flags,data)
     # default is OctetString  
     return encode_OctetString(A,flags,data) 
 
@@ -738,11 +777,12 @@ def getCurrentDateTime():
     t=time.localtime()
     return t.tm_year,t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec
 
-# converts to seconds since epoch
+# converts seconds since epoch to date
 def epoch2date(sec):
     t=time.localtime(sec)
     return t.tm_year,t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec
 
+# converts to seconds since epoch
 def date2epoch(tYear,tMon,tDate,tHr,tMin,tSec):  
     t=time.strptime("{0} {1} {2} {3} {4} {5}".format(tYear,tMon,tDate,tHr,tMin,tSec),"%Y %m %d %H %M %S")
     return time.mktime(t)    
@@ -762,6 +802,6 @@ def date2epoch(tYear,tMon,tDate,tHr,tMin,tSec):
 # Ver 0.2.7 - May 12, 2012 - Grouped, Float support
 # Ver 0.2.8 - May 25, 2012 - EAP functions moved to separate source
 # Ver 0.3.1 - Nov 12, 2012 - bugfix in encoding grouped list (fixed wrong length)
-#                          - ipv6 encoding bugfix
-#                          - comments added
-#                          - logging levels modified
+#                          - ipv6 encoding bugfix, comments added
+#                          - logging levels modified, Time support added
+#                          - Enumerated now supports named values
