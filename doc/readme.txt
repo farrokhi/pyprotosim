@@ -29,7 +29,7 @@ additional installations).
 The goal was to have:
 - a PORTABLE diameter client (that means no installation required, just unpack 
   and run, without changing existing applications on system) 
-- primary usage is TESTING, hot heavy load or simplest usage
+- primary usage is TESTING, not heavy load or simplest usage
 - must work on x86 Solaris 10, Linux and Windows
 - dictionary is mandatory (to easily test mismatched AVP or modify values)
 - unknown AVPs need to be easily manageable (inserted without defining in 
@@ -51,9 +51,9 @@ Now on more serious note:
 Naming
 ------
 
-Original name was about testing AAA server I was testing on. But as the project grew, that name had to be 
-changed. Finally, name was settled to PYthon Protocol Simulator (pronounced as 
-"pipes"). 
+Original name was about testing AAA server I was testing on. But as the 
+project grew, that name had to be changed. Finally, name was settled to 
+PYthon Protocol Simulator (pronounced as "pipes"). 
 
 Features
 --------
@@ -64,7 +64,7 @@ Features
 - use simplified dictionary (minimal features - user must know what is needed)
 - easy encode unknown AVPs as HEX-stream (just copy it from wireshark)
 - client examples included
-- supported protocols: RADIUS, DIAMETER, DHCP, LDAP
+- supported protocols: RADIUS, DIAMETER, DHCP, LDAP, SMPP
 - EAP: calculate SIM keys
 - EAP: calculate AKA keys
 - EAP: calculate AKA' keys
@@ -73,11 +73,11 @@ Features
 - EAP: decode AT_ENCR_DATA to get Pseudonym/Re-auth Identity
 - EAP: HSS simulator
 - RADIUS: encrypt/decrypt password
+- LDAP: LDAP server simulator
 - tested on Linux, Solaris 10-x86 and Windows XP
 
 I did not bother too much to analyze/decode packets. Wireshark is much better 
-tool for such details. It should be rather easy to add support if you need it 
-(e.g. extend simplified dictionary, define enumerated AVPS...). 
+tool for such details. It should be rather easy to add support if you need it .
 Please note that it is not fully tested (I never needed some types, and I'm 
 not developing it as universal library, so be warned...)
 
@@ -115,9 +115,10 @@ RFC 5448 - EAP-AKA'
 FIPS 186-2 + Change Notice - Pseudo Random Function
 RFC 2132 - DHCP Options and BOOTP Vendor Extensions
 For full list check at http://www.zytrax.com/books/dhcp/apc/
+RFC 4510 - Lightweight Directory Access Protocol
+For full list check at http://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol#RFCs
+SMPP Developer’s Forum, SMPP Protocol Specification v3.4, 10/12/1999
 and probably some others I forgot to mention while researching some issue
-
-For LDAP I'm still digging, so it will not be listed here yet
 
 Developer's note
 ----------------
@@ -136,8 +137,8 @@ testing tool.
 I know that for DHCP you have Options, not AVPs, but... to stick with similar 
 naming/code, I just renamed them. And you also have DHCP dictionary :-)
 In LDAP I tried not to use dictionary, but I don't like how the code looks 
-like. So it is possible I'll switch to "dictionary approach". And I do not 
-like how code decodes LDAP packet (not decoding itself, but determining 
+like. So it is possible that I'll switch to "dictionary approach". And I do 
+not like how code decodes LDAP packet (not decoding itself, but determining 
 relations between them (parent/child)). So it will probaly change also. 
 
 Simplified dictionary
@@ -148,17 +149,18 @@ it without too much fuss.
 I know that in diameter you can specify AVPs per Application Id. I did not 
 need that type of complexity. So I simplified.
 You have basic types. You can define "typedefs" which are aliased to basic 
-types. You have vendors and AVPs. Only minimum of fields are present. 
-Enumerated types are unlisted by design, so the dictionary can survive 
-without update (It means that value will not be decoded, but left as integer).
-Grouped AVPs are defined as container only.
+types. You have vendors and AVPs. Only minimum of fields definitions are 
+present. Enumerated types are included for your reference, but not used by 
+design, so the dictionary can survive without update (It means that value 
+will not be decoded into name, but left as integer). Grouped AVPs are defined
+as container only.
 Including other dictionaries is not something I needed at design time.
 So feel free to modify it to full blown dictionary. I did during experimenting,
 and then choose to "simplify" it. But then - your mileage might wary. 
 Using wireshark dictionary directly was an option, but... I needed multiple 
 test dictionaries and this approach was abandoned.
 Code to create simplified dictionary from wireshark dictionary files is 
-included. 
+included. (I have a gigantic adoration for Wireshark - can you tell? :-))
 
 License
 -------
