@@ -19,8 +19,6 @@ import string
 
 # Header fields
 
-SMPP_HDR_REQUEST    = 0x80
-
 # Include common routines for all modules
 ERROR = -1
  
@@ -30,21 +28,20 @@ class AVPItem:
         self.code=0
         self.name=""
         self.type=""
-        self.mandatory=""
         
 class HDRItem:
     def __init__(self):
         self.len=0
-        self.id=0
-        self.status=0
-        self.number=0
+        self.operation=0
+        self.result=0
+        self.sequence=0
         self.msg=""
-        self.mandatory=""
-        self.optional=""
+        self.mandatory=[]
+        self.optional=[]
         
 # Load simplified dictionary from <file>
 def LoadDictionary(file):
-    global dict_commands
+    global dict_msg
     global dict_optional
     doc = minidom.parse(file)
     node = doc.documentElement
@@ -53,6 +50,7 @@ def LoadDictionary(file):
 
 # Find Command definition in dictionary: 257->Capabilities-Exchange
 def dictMSGcode2name(code):
+    global dict_msg
     cmd=ERROR
     for cmd in dict_msg:
          cName=cmd.getAttribute("name")
@@ -63,6 +61,7 @@ def dictMSGcode2name(code):
     bailOut(dbg)
     
 def dictFindMandatoryAVP(code):
+    global dict_msg
     ret=[]
     for command in dict_msg:
          cCode=command.getAttribute("code")
@@ -73,20 +72,25 @@ def dictFindMandatoryAVP(code):
             return ret
     return ERROR
 
-def dictFindOptionalAVP(code):
-    ret=[]
+def dictFindOptionalAVPbyCode(code):
     for command in dict_optional:
          cCode=command.getAttribute("code")
          cName=command.getAttribute("name")
          if code==cCode:
-            for cMandatory in command.getElementsByTagName("mandatory"):
-                cName=cMandatory.getAttribute("name")
-                ret.append(cName)
-            return ret
+            return cName
+    return ERROR
+
+def dictFindOptionalAVPbyName(name):
+    for command in dict_optional:
+         cCode=command.getAttribute("code")
+         cName=command.getAttribute("name")
+         if name==cName:
+            return cCode
     return ERROR
     
 def dictFindDetails(code,mName):
-    for command in dict_commands:
+    global dict_msg
+    for command in dict_msg:
          cCode=command.getAttribute("code")
          if code==cCode:
             for cMandatory in command.getElementsByTagName("mandatory"):
@@ -113,7 +117,22 @@ def decode_Int(data):
 def decode_Integer16(data):
     ret=struct.unpack("!H",data.decode("hex"))[0]
     return int(ret)    
- 
+    
+def decode_as(msg,cType,cMax):
+    if cType=="C-OS":
+        (sValue,msg)=smart_chop(msg,cMax)
+        return (sValue.decode('hex'),msg)
+    if cType=="Byte":
+        (sValue,msg)=chop_msg(msg,2)
+        return (str(decode_Int(sValue)),msg)
+    if cType=="Word":
+        (sValue,msg)=chop_msg(msg,4)
+        return (str(decode_Integer16(sValue)),msg)
+    if cType=="OS":
+        (sValue,msg)=chop_msg(msg,cMax)
+        return (sValue,msg)    
+    dbg="Unknown type",cType
+    bailOut(dbg)
 
 #----------------------------------------------------------------------
     
@@ -160,21 +179,21 @@ def smart_chop(msg,cMax):
 # Result: class H with splitted message (header+message)
 # AVPs in message are NOT splitted
 def stripHdr(H,msg):
-    dbg="Incoming Diameter msg",msg
+    dbg="Incoming SMPP msg",msg
     logging.info(dbg)
     if len(msg)==0:
         return ERROR
     (slen,msg)=chop_msg(msg,8)
-    (sid,msg)=chop_msg(msg,8)
-    (sstatus,msg)=chop_msg(msg,8)
-    (snumber,msg)=chop_msg(msg,8)
-    dbg="Split hdr","L",slen,"I",sid,"S",sstatus,"N",snumber,"D",msg
+    (soperation,msg)=chop_msg(msg,8)
+    (sresult,msg)=chop_msg(msg,8)
+    (ssequence,msg)=chop_msg(msg,8)
+    dbg="Split hdr","L",slen,"I",soperation,"S",sresult,"N",ssequence,"D",msg
     logging.debug(dbg)
     H.len=decode_Integer32(slen)
-    H.id=sid
-    H.status=decode_Integer32(sstatus)
-    H.number=decode_Integer32(snumber)
-    dbg=dictCOMMANDcode2name(sid)
+    H.operation=soperation
+    H.result=decode_Integer32(sresult)
+    H.sequence=decode_Integer32(ssequence)
+    dbg=dictMSGcode2name(soperation)
     logging.info(dbg)
     H.msg=msg
     return 
@@ -184,24 +203,30 @@ def stripHdr(H,msg):
 # Result: list of undecoded AVPs
 def splitMsgAVPs(H):
     ret=[]
-    dbg="Incoming avps",H.msg
+    dbg="Undecoded msg",H.msg
     opt=decodeMandatory(H)
     decodeOptional(H,opt)
+    dbg="Mandatory:",H.mandatory
+    logging.info(dbg)
+    dbg="Optional:",H.optional
+    logging.info(dbg)
     return
 
 def decodeMandatory(H):
     msg=H.msg
-    for mandatory in dictFindMandatoryAVP(H.id):
-        cName,cType,cMax=dictFindDetails(H.id,mandatory)
-        print cName,cType,cMax
-        if cType=="Int":
-            (sInt,msg)=chop_msg(msg,2)
-            print sInt
-            ret.append(cName+'='+str(decode_Int(sInt)))
-        else:
-            (sValue,msg)=smart_chop(msg,cMax)
-            print sValue
-            ret.append(cName+'='+sValue.decode("hex"))    
+    ret=[]
+    for mandatory in dictFindMandatoryAVP(H.operation):
+        cName,cType,cMax=dictFindDetails(H.operation,mandatory)
+        dbg="mandatory param:",cName,cType,cMax
+        logging.debug(dbg)
+        # Hardcoded fix
+        if cName=="short_message":
+            cMax=mLen
+        (data,msg)=decode_as(msg,cType,cMax)
+        # Hardcoded fix
+        if  cName=="sm_length":
+            mLen=int(data)
+        ret.append(cName+'='+data)
     H.mandatory=ret
     return msg
 
@@ -220,8 +245,60 @@ def decodeOptional(H,msg):
         (sLen,msg)=chop_msg(msg,4)
         vLen=decode_Integer16(sLen)
         (sValue,msg)=chop_msg(msg,2*vLen)
-        cName=dictFindOptionalAVP(sTag)
+        cName=dictFindOptionalAVPbyCode(sTag)
 #---------------------------------------------------------------------- 
+
+def packHdr(H):
+    # first add all avps into single string if needed
+    if H.msg=="":
+        H.msg=encodeMandatory(H)+encodeOptional(H)
+    # since all data is hex ecoded, divide by 2 and add header length
+    H.len=len(H.msg)/2+16
+    ret="%08X" % H.len+H.operation + "%08X"%int(H.result)+"%08X"%int(H.sequence)
+    ret=ret+H.msg
+    dbg="Header fields","L",H.len,"O",H.operation,"R",H.result,"S",H.sequence,"M",H.msg
+    logging.debug(dbg)
+    dbg="SMPP hdr+data",ret
+    logging.info(dbg)
+    return ret
+    
+def encodeMandatory(H):    
+    msg=''
+    for mandatory in dictFindMandatoryAVP(H.operation):
+        cName,cType,cMax=dictFindDetails(H.operation,mandatory)
+        dbg="mandatory param:",cName,cType,cMax
+        logging.debug(dbg)
+        for v in H.mandatory:
+            if string.find(v,cName+'=')==0:
+                msg+=encodeAVP(cType,v[len(cName)+1:])
+    dbg="Encoded mandatory:",msg
+    logging.info(dbg)
+    return msg
+
+def encodeOptional(H):    
+    msg=''
+    return msg
+    
+def encodeAVP(cType,value):
+    if cType=="C-OS":
+        return value.encode("hex")+"00"
+    if cType=="Byte":
+        return "%02X"%int(value)
+    if cType=="Word":
+        return "%04X"%int(value)
+    if cType=="OS":
+        return value
+    dbg="Unknown type",cType
+    bailOut(dbg)    
+#---------------------------------------------------------------------- 
+ 
+# Connect to host:port (TCP) 
+def Connect(host,port):
+    # Create a socket (SOCK_STREAM means a TCP socket)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((host, port))
+    return sock
+        
 ######################################################        
 # History
 # Ver 0.3.1 - Nov 16, 2012 - initial version

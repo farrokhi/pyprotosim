@@ -35,7 +35,7 @@
     </msg>     
     <msg code="80000003" name="query_sm_resp">        
         <mandatory name="message_id" type="C-OS" max="65" />
-        <mandatory name="final_date" type="C-OS max="17"/>
+        <mandatory name="final_date" type="C-OS" max="17"/>
         <mandatory name="message_state" type="Byte"/>
         <mandatory name="error_code" type="Byte" max="21"/>
     </msg>     
@@ -119,8 +119,8 @@
         <mandatory name="addr_npi" type="Byte"/>
         <mandatory name="address_range" type="C-OS" max="41"/>
     </msg>
-    <msg code="80000009" name="bind_transceiver_resp"/>     
-        <mandatory name="system_id" type="C-OS" max="16">
+    <msg code="80000009" name="bind_transceiver_resp">     
+        <mandatory name="system_id" type="C-OS" max="16"/>
     </msg> 
     <msg code="0000000B" name="outbind">
         <mandatory name="system_id" type="C-OS" max="16" />

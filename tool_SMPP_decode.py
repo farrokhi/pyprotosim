@@ -21,8 +21,11 @@ if __name__ == "__main__":
     H=HDRItem()
     stripHdr(H,msg)
 
-    print "Len=",H.len,"Identifier=",H.id,"Status=",H.status,"Number=",H.number,"Message=",H.msg
+    print "Len=",H.len,"Code=",H.operation,"Status=",H.result,"Sequence=",H.sequence,"Message=",H.msg
     splitMsgAVPs(H)
+    print "Mandatory:",H.mandatory
+    print "Optional:",H.optional
+    
 ######################################################
 # History
 # 0.3.1 - Nov 15, 2012 - SMPP decode initial version
