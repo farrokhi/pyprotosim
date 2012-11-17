@@ -1,66 +1,96 @@
 #!/usr/bin/env python
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
-# February 2012 - October 2012
-# Version 0.2.9, Last change on Oct 10, 2012
+# February 2012 - November 2012
+# Version 0.3.1, Last change on Nov 10, 2012
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
-# HSS Simulator (single client) build upon libDiameter 
+# HSS Simulator (multiple clients) build upon libDiameter 
 # interrupt the program with Ctrl-C
 
-#Next two lines include parent directory for where libDiameter is located
+#Next two lines include parent directory where libDiameter is located
 import sys
 sys.path.append("..")
 # Remove them if everything is in the same dir
 
-import SocketServer
+import socket
+import select
+import logging
 from libDiameter import *
 
-class MyTCPHandler(SocketServer.BaseRequestHandler):
-    """
-    The RequestHandler class for our server.
+SKIP=0
 
-    It is instantiated once per connection to the server, and must
-    override the handle() method to implement communication to the
-    client.
-    """
-
-    def __init__(self, request, client_address, server):
-        SocketServer.BaseRequestHandler.__init__(self, request, client_address, server)
-        return
-    BUFFER_SIZE =1024 
-    def handle(self):
-        # self.request is the TCP socket connected to the client
+def handle_HSS(conn):
+    global sock_list
+    # conn is the TCP socket connected to the client
+    dbg="Connection:",conn.getpeername(),'to',conn.getsockname()
+    logging.info(dbg)
+    #get input ,wait if no data
+    data=conn.recv(BUFFER_SIZE)
+    #suspect more data (try to get it all without stopping if no data)
+    if (len(data)==BUFFER_SIZE):
         while 1:
-            dbg="Connection:",self.client_address[0]
-            logging.info(dbg)
-            #get input ,wait if no data
-            data=self.request.recv(self.BUFFER_SIZE)
-            #suspect more data (try to get it all without stopping if no data)
-            if (len(data)==self.BUFFER_SIZE):
-                while 1:
-                    try:
-                        data+=self.request.recv(self.BUFFER_SIZE, socket.MSG_DONTWAIT)
-                    except:
-                        #error means no more data
-                        break
-            #no data found exit loop (posible closed socket)
-            if (data != ""): 
-                #processing input
-                dbg="Incomming message",data.encode("hex")
+            try:
+                data+=self.request.recv(BUFFER_SIZE, socket.MSG_DONTWAIT)
+            except:
+                #error means no more data
+                break
+    if (data != ""): 
+        #processing input
+        dbg="Incomming message",data.encode("hex")
+        logging.info(dbg)
+        ret=process_request(data.encode("hex")) 
+        if ret==ERROR:
+            dbg="Error responding",ret
+            logging.error(dbg)
+        else:
+            if ret==SKIP:
+                dbg="Skipping response",ret
+                logging.info(dbg)                
+            else:
+                dbg="Sending response",ret
                 logging.info(dbg)
-                ret=process_request(data.encode("hex")) 
-                if ret==ERROR:
-                    dbg="Error responding",ret
-                    logging.error(dbg)
-                else:
-                    dbg="Sending response",ret
-                    logging.info(dbg)
-                    self.request.send(ret.decode("hex"))
+                conn.send(ret.decode("hex"))    
+    else:
+        #no data found exit loop (posible closed socket)        
+        # remove it from sock_list
+        sock_list.remove(conn)
+        conn.close()
 
-
+def handle_CMD(srv):
+    conn,address=srv.accept()
+    #get input ,wait if no data
+    data=conn.recv(BUFFER_SIZE)
+    #suspect more data (try to get it all without stopping if no data)
+    if (len(data)==BUFFER_SIZE):
+        while 1:
+            try:
+                data+=self.request.recv(BUFFER_SIZE, socket.MSG_DONTWAIT)
+            except:
+                #error means no more data
+                break
+    if (data != ""): 
+        #processing input
+        dbg="Incomming CMD",data.encode("hex")
+        logging.info(dbg)
+        ret=process_CMD(data.encode("hex")) 
+        if ret==ERROR:
+            dbg="Quitting",ret
+            logging.error(dbg)
+            conn.close()
+            return ERROR
+        else:
+            dbg="Sending command",ret
+            logging.info(dbg)
+            sock_list[-1].send(ret.decode("hex"))    
+    conn.close()
+    return 
+    
 def create_CEA(H):
+    global DEST_REALM
+    CER_avps=splitMsgAVPs(H.msg)
+    DEST_REALM=findAVP("Origin-Realm",CER_avps)     
     # Let's build Capabilites-Exchange Answer
     CEA_avps=[]
     CEA_avps.append(encodeAVP("Origin-Host", ORIGIN_HOST))
@@ -134,6 +164,7 @@ def create_SAA(H):
     # We need Session-Id from Request
     SAR_avps=splitMsgAVPs(H.msg)
     sesID=findAVP("Session-Id",SAR_avps) 
+    saType=findAVP("Server-Assignment-Type",SAR_avps)
     userName=findAVP("User-Name",SAR_avps)
     SAA_avps=[]
     SAA_avps.append(encodeAVP("Origin-Host", ORIGIN_HOST))
@@ -141,13 +172,14 @@ def create_SAA(H):
     SAA_avps.append(encodeAVP("Session-Id", sesID))
     SAA_avps.append(encodeAVP("User-Name", userName))
     # Grouped AVPs are encoded like this
-    #SAA_avps.append(encodeAVP("Vendor-Specific-Application-Id",[
-    #    encodeAVP("Vendor-Id",dictVENDORid2code('TGPP')),
-    #    encodeAVP("Auth-Application-Id",APPLICATION_ID)]))
+    SAA_avps.append(encodeAVP("Vendor-Specific-Application-Id",[
+        encodeAVP("Vendor-Id",dictVENDORid2code('TGPP')),
+        encodeAVP("Auth-Application-Id",H.appId)]))
     SAA_avps.append(encodeAVP("Auth-Session-State", 1)) # 1 - NO_STATE_MAINTAINED    
     SAA_avps.append(encodeAVP("Result-Code", 2001))   #DIAMETER_SUCCESS 2001
-    #Non-3GPP-User-Data
-    SAA_avps.append("000005dcc0000114000028af000001bb4000002c000001bc4000001731323131313232323230303036323300000001c24000000c00000000000005ddc0000010000028af00000000000005dec0000010000028af000000000000007c40000010000000000000000100000596c000009c000028af0000058fc0000010000028af00000001000001ed4000000a61310000000005b0c0000010000028af000000000000059bc000002c000028af00000204c0000010000028af000001f400000203c0000010000028af000001f400000597c0000038000028af00000404c0000010000028af000000010000040ac000001c000028af00000416c0000010000028af000000000000058fc0000010000028af00000000")
+    if saType==1:   #REGISTRATION
+        #Non-3GPP-User-Data
+        SAA_avps.append("000005dcc0000114000028af000001bb4000002c000001bc4000001731323131313232323230303036323300000001c24000000c00000000000005ddc0000010000028af00000000000005dec0000010000028af000000000000007c40000010000000000000000100000596c000009c000028af0000058fc0000010000028af00000001000001ed4000000a61310000000005b0c0000010000028af000000000000059bc000002c000028af00000204c0000010000028af000001f400000203c0000010000028af000001f400000597c0000038000028af00000404c0000010000028af000000010000040ac000001c000028af00000416c0000010000028af000000000000058fc0000010000028af00000000")
     # Create message header (empty)
     SAA=HDRItem()
     # Set command code
@@ -168,14 +200,14 @@ def build_MAA(H,AppId,UserName,SIP_Auth):
     MAA_avps.append(encodeAVP("Origin-Host", ORIGIN_HOST))
     MAA_avps.append(encodeAVP("Origin-Realm", ORIGIN_REALM))
     MAA_avps.append(encodeAVP("Vendor-Specific-Application-Id",[
-         encodeAVP("Vendor-Id",dictVENDORid2code('TGPP')),
+        encodeAVP("Vendor-Id",dictVENDORid2code('TGPP')),
         encodeAVP("Auth-Application-Id",AppId)])) 
     MAA_avps.append(encodeAVP("Auth-Session-State",1)) #NO_STATE_MAINTAINED
     MAA_avps.append(encodeAVP("User-Name",UserName))
     MAA_avps.append(encodeAVP("Result-Code", 2001)) #DIAMETER_SUCCESS 2001
     MAA_avps.append(encodeAVP("SIP-Number-Auth-Items",len(SIP_Auth)))
     for s in SIP_Auth:
-	MAA_avps.append(s)
+            MAA_avps.append(s)
     # Create message header (empty)
     MAA=HDRItem()
     # Set command code
@@ -213,22 +245,47 @@ def create_MAA(H):
         logging.info("Responding with SWx AKA'")
         return build_MAA(H,16777265,UserName,getQuintet(UserName,NumOfItems,Auth_Scheme))
     return ERROR
+    
+def appendToCMD(H):
+    # We need to append Host&Realm to message
+    CMD_avps=splitMsgAVPs(H.msg)
+    CMD_avps.append(encodeAVP("Origin-Host", ORIGIN_HOST))
+    CMD_avps.append(encodeAVP("Origin-Realm", ORIGIN_REALM))
+    CMD_avps.append(encodeAVP("Destination-Realm", DEST_REALM))
+    ret=createRes(H,CMD_avps)
+    dbg="Appended ",ret
+    logging.info(dbg)
+    return ret
+
+def process_CMD(rawdata):
+    dbg="Processing CMD",rawdata
+    logging.info(dbg)
+    if rawdata[:2]=="01":
+        #Diammeter command
+        logging.info("Processing diameter request")
+        H=HDRItem()
+        stripHdr(H,rawdata)
+        return appendToCMD(H)
+    else:
+        return ERROR
 
 def process_request(rawdata):
     H=HDRItem()
     stripHdr(H,rawdata)
-    if H.cmd==257:
-        logging.info("Processing Capabilities-Exchange")
+    dbg="Processing",dictCOMMANDcode2name(H.flags,H.cmd)
+    logging.info(dbg)
+    if H.flags & DIAMETER_HDR_REQUEST==0:
+        # If Answer no need to do anything
+        # Messages HSS->AAA are send with external put_*.py script
+        return SKIP
+    if H.cmd==257:  # Capabilities-Exchange
         return create_CEA(H)
-    if H.cmd==303:
-        logging.info("Processing Multimedia-AuthRequest")
-        return create_MAA(H)
-    if H.cmd==280:
-        logging.info("Processing Device-WatchdogRequest")
+    if H.cmd==280:  # Device-Watchdog
         return create_DWA(H)
-    if H.cmd==301:
-        logging.info("Processing Server-AssignmentRequest")
+    if H.cmd==301:  # Server-Assignment
         return create_SAA(H)        
+    if H.cmd==303:  # Multimedia-Auth
+        return create_MAA(H)
     return create_UTC(H,"Unknown command code")
 
 def getRadiusTriplet(UserName,NumOfItems,AuthMethod):
@@ -265,29 +322,82 @@ def getQuintet(UserName,NumOfItems,AuthScheme):
              ]))
     return ret
     
+def Quit():
+    for conn in sock_list:
+        conn.close()
+    sys.exit(0)
+    
 if __name__ == "__main__":
     # level for decoding are: DEBUG, INFO, WARNING, ERROR, CRITICAL
-    logging.basicConfig(filename='/tmp/log', level=logging.INFO)
-    #logging.basicConfig(level=logging.INFO)
-    # Define server_host:port to use
-    HOST, PORT = "10.14.5.148", 3869
-    
-    ORIGIN_HOST="server.test.com"
-    ORIGIN_REALM="test.com"
-    LoadDictionary("../dictDiameter.xml")
-    # Create the server, binding to HOST:PORT
-    # To allow SO_REUSEADDR, set allow_resue_address to True BEFORE bind
-    SocketServer.TCPServer.allow_reuse_address = True
-    server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
+    #logging.basicConfig(filename='log', level=logging.INFO)
+    logging.basicConfig(level=logging.INFO)
 
+    # Define server_host:port to use (empty string means localhost)
+    HOST = ""
+    DIAM_PORT = 3868
+
+    # Define command port to trigger PPR/RTR and other commands
+    CMD_PORT = 3869
+    
+    ORIGIN_HOST = "server.test.com"
+    ORIGIN_REALM = "test.com"
+    DEST_REALM = ""
+    
+    LoadDictionary("../dictDiameter.xml")
+
+    BUFFER_SIZE=1024    
+    MAX_CLIENTS=3
+    sock_list=[]
+   
+    # Create the server, binding to HOST:DIAM_PORT
+    HSS_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # fix "Address already in use" error upon restart
+    HSS_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    HSS_server.bind((HOST, DIAM_PORT))  
+    HSS_server.listen(MAX_CLIENTS)
+    sock_list.append(HSS_server)
+
+    # Create the server, binding to HOST:CMD_PORT
+    CMD_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # fix "Address already in use" error upon restart
+    CMD_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    CMD_server.bind((HOST, CMD_PORT))  
+    CMD_server.listen(MAX_CLIENTS)
+    sock_list.append(CMD_server)
+    logging.info("Server started")
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
-    server.serve_forever()
+    while True:
+        try:
+            read, write, error = select.select(sock_list,[],[],1)
+        except:
+            break
+        for r in read:
+            logging.info("Incoming data")
+            # First handle command connection to CMD_server
+            if r==CMD_server:
+                if handle_CMD(CMD_server)==ERROR:
+                    logging.info("Exiting")
+                    Quit()
+            else:
+                # Is it new or existing connection
+                if r==HSS_server:
+                    # New connections: accept on new socket
+                    conn,addr=HSS_server.accept()
+                    sock_list.append(conn)
+                    if handle_HSS(conn)==ERROR:
+                        Quit()
+                else:
+                    if handle_HSS(r)==ERROR:
+                        Quit()
+    Quit()
 
 ######################################################        
 # History
 # 0.2.7 - Sep 28, 2012 - initial version
 # 0.2.8 - Oct 04, 2012 - tested radius SIM/AKA OK
 # 0.2.9 - Oct 10, 2012 - added SAR/SAA
-# 0.3.0 - Nov 10, 2012 - fixed SAA
+# 0.3.1 - Nov 09, 2012 - multiple connections allowed
+#                      - added PPR, RTR (via ext command)
+#                      - SAA fixed
 
