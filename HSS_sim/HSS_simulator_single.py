@@ -336,7 +336,7 @@ if __name__ == "__main__":
     HOST = ""
     DIAM_PORT = 3868
 
-    # Define command port to trigger PPR/RTR and other commands
+    # Define command port to trigger PPR/RTR and other HSS initiated commands
     CMD_PORT = 3869
     
     ORIGIN_HOST = "server.test.com"
