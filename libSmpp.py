@@ -125,6 +125,9 @@ def decode_as(msg,cType,cMax):
     if cType=="Byte":
         (sValue,msg)=chop_msg(msg,2)
         return (str(decode_Int(sValue)),msg)
+    if cType=="Hex":
+        (sValue,msg)=chop_msg(msg,2)
+        return (sValue,msg)
     if cType=="Word":
         (sValue,msg)=chop_msg(msg,4)
         return (str(decode_Integer16(sValue)),msg)
@@ -219,13 +222,14 @@ def decodeMandatory(H):
         cName,cType,cMax=dictFindDetails(H.operation,mandatory)
         dbg="mandatory param:",cName,cType,cMax
         logging.debug(dbg)
-        # Hardcoded fix
-        if cName=="short_message":
-            cMax=mLen
+        # Fix to get previously defined length 
+        #e.g short_message and short_message_len
+        if cMax!='':
+            if not cMax.isnumeric():
+                for r in ret:
+                    if string.find(r,cMax+'=')==0:
+                        cMax=int(r[len(cMax)+1:])
         (data,msg)=decode_as(msg,cType,cMax)
-        # Hardcoded fix
-        if  cName=="sm_length":
-            mLen=int(data)
         ret.append(cName+'='+data)
     H.mandatory=ret
     return msg

@@ -89,6 +89,7 @@ if __name__ == "__main__":
     # Receive response
     received = Conn.recv(MSG_SIZE)
     ###########################################################
+    # Let's build submit
     seq+=1
     S=create_submit_sm(seq)
     msg=packHdr(S)
@@ -97,6 +98,7 @@ if __name__ == "__main__":
     # Receive response
     received = Conn.recv(MSG_SIZE)
     ###########################################################
+    # Let's build unbind
     seq+=1
     U=create_unbind(seq)
     msg=packHdr(U)

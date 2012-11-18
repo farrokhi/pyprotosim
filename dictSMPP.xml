@@ -7,7 +7,7 @@
         <mandatory name="system_id" type="C-OS" max="16" />
         <mandatory name="password" type="C-OS" max="9"/>
         <mandatory name="system_type" type="C-OS" max="13"/>
-        <mandatory name="interface_version" type="Byte"/>
+        <mandatory name="interface_version" type="Hex"/>
         <mandatory name="addr_ton" type="Byte"/>
         <mandatory name="addr_npi" type="Byte"/>
         <mandatory name="address_range" type="C-OS" max="41"/>
@@ -19,7 +19,7 @@
         <mandatory name="system_id" type="C-OS" max="16" />
         <mandatory name="password" type="C-OS" max="9"/>
         <mandatory name="system_type" type="C-OS" max="13"/>
-        <mandatory name="interface_version" type="Byte"/>
+        <mandatory name="interface_version" type="Hex"/>
         <mandatory name="addr_ton" type="Byte"/>
         <mandatory name="addr_npi" type="Byte"/>
         <mandatory name="address_range" type="C-OS" max="41"/>
@@ -57,7 +57,7 @@
         <mandatory name="data_coding" type="Byte"/>
         <mandatory name="sm_default_msg_id" type="Byte"/>        
         <mandatory name="sm_length" type="Byte"/>
-        <mandatory name="short_message" type="OS" max="254"/>        
+        <mandatory name="short_message" type="OS" max="sm_length"/>        
      </msg>         
     <msg code="80000004" name="submit_sm_resp">
         <mandatory name="message_id" type="C-OS" max="65" />
@@ -68,7 +68,9 @@
         <mandatory name="source_addr_npi" type="Byte"/>
         <mandatory name="source_addr" type="C-OS" max="21"/>
         <mandatory name="number_of_dests" type="Byte"/>
-        <mandatory name="dest_address" type="Var" max="24"/>
+        <mandatory name="dest_addr_ton" type="Byte"/>
+        <mandatory name="dest_addr_npi" type="Byte"/>
+        <mandatory name="destination_addr" type="C-OS" max="21"/>
         <mandatory name="esm_class" type="Byte"/>
         <mandatory name="protocol_id" type="Byte"/>
         <mandatory name="priority_flag" type="Byte"/>        
@@ -79,10 +81,10 @@
         <mandatory name="data_coding" type="Byte"/>
         <mandatory name="sm_default_msg_id" type="Byte"/>        
         <mandatory name="sm_length" type="Byte"/>
-        <mandatory name="short_message" type="OS" max="254"/>        
+        <mandatory name="short_message" type="OS" max="sm_length"/>        
     </msg>  
     <msg code="80000005" name="deliver_sm_resp">     
-        <mandatory name="message_id" type="C-OS" max="65" />
+        <mandatory name="message_id" type="C-OS" max="1" />
     </msg> 
     <msg code="00000006" name="unbind"/>
     <msg code="80000006" name="unbind_resp"/>
@@ -94,9 +96,11 @@
         <mandatory name="schedule_delivery_time" type="C-OS" max="17" />
         <mandatory name="validity_period" type="C-OS" max="17" />
         <mandatory name="registered_delivery" type="Byte"/>
+        <mandatory name="replace_if_present_flag" type="Byte"/>     
+        <mandatory name="data_coding" type="Byte"/>
         <mandatory name="sm_default_msg_id" type="Byte"/>        
         <mandatory name="sm_length" type="Byte"/>
-        <mandatory name="short_message" type="OS" max="254"/>        
+        <mandatory name="short_message" type="OS" max="sm_length"/>        
     </msg> 
     <msg code="80000007" name="replace_sm_resp"/>     
     <msg code="00000008" name="cancel_sm">    
@@ -114,7 +118,7 @@
         <mandatory name="system_id" type="C-OS" max="16" />
         <mandatory name="password" type="C-OS" max="9"/>
         <mandatory name="system_type" type="C-OS" max="13"/>
-        <mandatory name="interface_version" type="Byte"/>
+        <mandatory name="interface_version" type="Hex"/>
         <mandatory name="addr_ton" type="Byte"/>
         <mandatory name="addr_npi" type="Byte"/>
         <mandatory name="address_range" type="C-OS" max="41"/>
@@ -134,7 +138,7 @@
         <mandatory name="source_addr_npi" type="Byte"/>
         <mandatory name="source_addr" type="C-OS" max="21"/>
         <mandatory name="number_of_dests" type="Byte"/>
-        <mandatory name="dest_address" type="Var" max="24"/>
+        <mandatory name="dest_address" type="DA" max="number_of_dests"/>
         <mandatory name="esm_class" type="Byte"/>
         <mandatory name="protocol_id" type="Byte"/>
         <mandatory name="priority_flag" type="Byte"/>        
@@ -145,17 +149,17 @@
         <mandatory name="data_coding" type="Byte"/>
         <mandatory name="sm_default_msg_id" type="Byte"/>        
         <mandatory name="sm_length" type="Byte"/>
-        <mandatory name="short_message" type="OS" max="254"/>        
+        <mandatory name="short_message" type="OS" max="sm_length"/>        
     </msg>  
     <msg code="80000021" name="submit_multi_resp">
         <mandatory name="message_id" type="C-OS" max="65" />
         <mandatory name="no_unsuccess" type="Byte"/>
-        <mandatory name="unsuccess_sme" type="Var" max="27" />
+        <mandatory name="unsuccess_sme" type="US" max="no_unsuccess" />
     </msg>   
     <msg code="00000102" name="alert_notification">    
         <mandatory name="source_addr_ton" type="Byte"/>
         <mandatory name="source_addr_npi" type="Byte"/>
-        <mandatory name="source_addr" type="C-OS" max="21"/>
+        <mandatory name="source_addr" type="C-OS" max="65"/>
         <mandatory name="esme_addr_ton" type="Byte"/>
         <mandatory name="esme_addr_npi" type="Byte"/>
         <mandatory name="esme_addr" type="C-OS" max="65"/>
