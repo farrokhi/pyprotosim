@@ -6,6 +6,9 @@ syntax: glob
 *.rhel
 *.solx86
 *.ubuntu
+*.pcap
+snoops/**
+doc/rfc/**
 
 # switch to regexp syntax.
 #syntax: regexp

@@ -41,7 +41,7 @@ class HDRItem:
         self.htype=1
         self.hlen=6
         self.hops=0
-        self.xid=0
+        self.xid="%08X"%0
         self.secs=4
         self.flags=0
         self.ciaddr="0.0.0.0"
@@ -59,7 +59,6 @@ class HDRItem:
 # Load dictionary
 def LoadDictionary(file):
     global dict_avps
-    global dict_vendors
     global dict_commands
     global asString
     global asUTF8
@@ -74,7 +73,6 @@ def LoadDictionary(file):
     doc = minidom.parse(file)
     node = doc.documentElement
     dict_avps = doc.getElementsByTagName("avp")
-    dict_vendors = doc.getElementsByTagName("vendor")
     dict_commands=doc.getElementsByTagName("command")
     # Now lets process typedefs
     asString=["OctetString"]
@@ -119,7 +117,6 @@ def dictAVPname2code(A,avpname,avpvalue):
     for avp in dict_avps:
         A.name = avp.getAttribute("name")
         A.code = avp.getAttribute("code")
-        A.mandatory=avp.getAttribute("mandatory")
         A.type = avp.getAttribute("type")
         A.slen = 0
         mlen=avp.getAttribute("len")
@@ -131,15 +128,14 @@ def dictAVPname2code(A,avpname,avpvalue):
     bailOut(dbg)
 
 # Find AVP definition in dictionary
-def dictAVPcode2name(A,avpcode,vendorcode):
-    dbg="Searching dictionary for ","C",avpcode,"V",vendorcode
+def dictAVPcode2name(A,avpcode):
+    dbg="Searching dictionary for ","C",avpcode
     logging.debug(dbg)
     A.vendor=0
     for avp in dict_avps:
         A.name = avp.getAttribute("name")
         A.type = avp.getAttribute("type")
         A.code = int(avp.getAttribute("code"))
-        A.mandatory=avp.getAttribute("mandatory")
         mlen = avp.getAttribute("len")
         if mlen!="":
             A.slen=int(mlen)
@@ -154,6 +150,7 @@ def dictAVPcode2name(A,avpcode,vendorcode):
     return 
 
 def dictCOMMANDname2code(name):
+    global dict_commands
     for command in dict_commands:
          cName=command.getAttribute("name")
          cCode=command.getAttribute("code")
@@ -163,6 +160,7 @@ def dictCOMMANDname2code(name):
     bailOut(dbg)
     
 def dictCOMMANDcode2name(code):
+    global dict_commands
     cmd=ERROR
     for command in dict_commands:
          cName=command.getAttribute("name")
@@ -674,7 +672,7 @@ def createPacket(D):
     hdr8=addTrailing(D.MAC,2*16)
     hdr9=addTrailing(D.Host.encode("hex"),2*64)
     hdr10=addTrailing(D.Boot.encode("hex"),2*128)   
-    hdr11=D.Cookie.encode("hex")
+    hdr11=addTrailing(D.Cookie.encode("hex"),8)
     msgEND='FF'
     ret=hdr1+D.xid+hdr3+hdr4+hdr5+hdr6+hdr7+hdr8+hdr9+hdr10+hdr11+D.msg+msgEND
     # Minimal packet len is 300 bytes

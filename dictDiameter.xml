@@ -2,12 +2,15 @@
 <!-- Based on the Wireshark dictionary.xml 2011-07-09 -->
 <!-- Unified command codes to use unique name 2012 May 08 -->
 <!-- EAP codes moved to separate dictionary 2012 May 13 -->
-<!-- Last change 2012 Nov 17 -->
+<!-- IP and IPAddress are encoded differently 2012 Nov 19 -->
+<!-- Last change 2012 Nov 19 -->
 <dictionary>
     <!-- *********************** Diameter Typedefs ************************* -->
     <!-- Basic types are OctetString, UTF8String, Unsigned32, Integer32 -->
-    <!-- Unsigned64, Integer64, Float32, Float64, IPAddress, Time -->  
-    <!-- Enumerated is handled internally as Integer32 -->    
+    <!-- Unsigned64, Integer64, Float32, Float64, IPAddress, IP Time, -->  
+    <!-- Enumerated is handled internally as Integer32 -->   
+    <!-- IP is NOT the same as IPAddress -->
+    <!-- IP is 4 byte IP Address, IPAddress is 6 byte -->
     <typedef name="DiameterIdentity"       type="OctetString"/>
     <typedef name="IPFilterRule"           type="OctetString"/>
     <typedef name="QOSFilterRule"          type="OctetString"/>
@@ -133,8 +136,8 @@
         <enum code="260" name="COMB"/>
         <enum code="261" name="FR"/>
     </avp>
-    <avp code="8" name="Framed-IP-Address" type="IPAddress" mandatory="must"/>
-    <avp code="9" name="Framed-IP-Netmask" type="IPAddress" mandatory="must"/>
+    <avp code="8" name="Framed-IP-Address" type="IP" mandatory="must"/>
+    <avp code="9" name="Framed-IP-Netmask" type="IP" mandatory="must"/>
     <avp code="10" name="Framed-Routing" type="Enumerated" mandatory="must">
         <enum code="0" name="None"/>
         <enum code="1" name="Send routing packets"/>

@@ -71,6 +71,7 @@ def LoadDictionary(file):
     global asI64
     global asF32
     global asF64
+    global asIPAddress
     global asIP
     global asTime
     doc = minidom.parse(file)
@@ -87,7 +88,8 @@ def LoadDictionary(file):
     asI64=["Integer64"]
     asU64=["Unsigned64"]
     asF64=["Float64"]
-    asIP=["IPAddress"]
+    asIPAddress=["IPAddress"]
+    asIP=["IP"]    
     asTime=["Time"]    
     dict_typedefs=doc.getElementsByTagName("typedef")
     for td in dict_typedefs:
@@ -109,14 +111,17 @@ def LoadDictionary(file):
            asF32.append(tName)           
         if tType in asF64:
            asF64.append(tName)           
+        if tType in asIPAddress:
+           asIPAddress.append(tName)
         if tType in asIP:
-           asIP.append(tName)
+           asIP.append(tName)           
         if tType in asTime:
            asTime.append(tName)   
         
 # Find AVP definition in dictionary: User-Name->1
 # on finish A contains all data
 def dictAVPname2code(A,avpname,avpvalue):
+    global dict_avps
     dbg="Searching dictionary for N",avpname,"V",avpvalue
     logging.debug(dbg)
     for avp in dict_avps:
@@ -137,6 +142,7 @@ def dictAVPname2code(A,avpname,avpvalue):
 # Find AVP definition in dictionary: 1->User-Name
 # on finish A contains all data
 def dictAVPcode2name(A,avpcode,vendorcode):
+    global dict_avps
     dbg="Searching dictionary for ","C",avpcode,"V",vendorcode
     logging.debug(dbg)
     A.vendor=dictVENDORcode2id(int(vendorcode))
@@ -159,6 +165,7 @@ def dictAVPcode2name(A,avpcode,vendorcode):
 
 # Find Vendor definition in dictionary: 10415->TGPP    
 def dictVENDORcode2id(code):
+    global dict_vendors
     dbg="Searching Vendor dictionary for C",code
     logging.debug(dbg)
     for vendor in dict_vendors:
@@ -171,6 +178,7 @@ def dictVENDORcode2id(code):
 
 # Find Vendor definition in dictionary: TGPP->10415    
 def dictVENDORid2code(vendor_id):
+    global dict_vendors
     dbg="Searching Vendor dictionary for V",vendor_id
     logging.debug(dbg)
     for vendor in dict_vendors:
@@ -183,6 +191,7 @@ def dictVENDORid2code(vendor_id):
 
 # Find Command definition in dictionary: Capabilities-Exchange->257    
 def dictCOMMANDname2code(name):
+    global dict_commands
     for command in dict_commands:
          cName=command.getAttribute("name")
          cCode=command.getAttribute("code")
@@ -193,6 +202,7 @@ def dictCOMMANDname2code(name):
 
 # Find Command definition in dictionary: 257->Capabilities-Exchange
 def dictCOMMANDcode2name(flags,code):
+    global dict_commands
     cmd=ERROR
     for command in dict_commands:
          cName=command.getAttribute("name")
@@ -330,12 +340,20 @@ def decode_Float64(data):
     
 def decode_Address(data):
     if len(data)<=16:
-        data=data[0:12]
-        ret=inet_ntop(socket.AF_INET,data[4:].decode("hex"))
+        data=data[4:12]
+        ret=inet_ntop(socket.AF_INET,data.decode("hex"))
     else:
-        ret=inet_ntop(socket.AF_INET6,data[4:].decode("hex"))
+        data=data[4:36]    
+        ret=inet_ntop(socket.AF_INET6,data.decode("hex"))
     return ret
 
+def decode_IP(data):
+    if len(data)<=16:
+        ret=inet_ntop(socket.AF_INET,data.decode("hex"))
+    else:
+        ret=inet_ntop(socket.AF_INET6,data.decode("hex"))
+    return ret
+    
 def decode_OctetString(data,dlen):
     fs="!"+str(dlen-8)+"s"
     dbg="Deconding String with format:",fs
@@ -462,8 +480,14 @@ def encode_Address(A,flags,data):
     ret=pack_address(data).encode("hex")
     pktlen=8+len(ret)/2
     return encode_finish(A,flags,pktlen,ret)
+    
+def encode_IP(A,flags,data):
+    ret=pack_address(data).encode("hex")[4:]
+    pktlen=8+len(ret)/2
+    return encode_finish(A,flags,pktlen,ret)    
 
 def encode_Enumerated(A,flags,data):
+    global dict_avps
     if isinstance(data,str):
         # Replace with enum code value
         for avp in dict_avps:
@@ -509,8 +533,10 @@ def do_encode(A,flags,data):
         return encode_Float32(A,flags,data)
     if A.type in asF64:
         return encode_Float64(A,flags,data)
-    if A.type in asIP:
+    if A.type in asIPAddress:
         return encode_Address(A,flags,data)
+    if A.type in asIP:
+        return encode_IP(A,flags,data)        
     if A.type in asTime:
         return encode_Time(A,flags,data)
     if A.type=="Enumerated":
@@ -613,10 +639,14 @@ def decodeAVP(msg):
         decoded=True
         logging.debug("Decoding UTF8String")
         ret= decode_UTF8String(msg,data_len)
-    if A.type in asIP:
+    if A.type in asIPAddress:
         decoded=True
         logging.debug("Decoding IPAddress")
         ret= decode_Address(msg)
+    if A.type in asIP:
+        decoded=True
+        logging.debug("Decoding IP")
+        ret= decode_IP(msg)        
     if A.type in asTime:
         decoded=True
         logging.debug("Decoding Time")
@@ -805,3 +835,4 @@ def date2epoch(tYear,tMon,tDate,tHr,tMin,tSec):
 #                          - ipv6 encoding bugfix, comments added
 #                          - logging levels modified, Time support added
 #                          - Enumerated now supports named values
+#                          - Fixed IP handling (now supports IP & IPAddress packing)

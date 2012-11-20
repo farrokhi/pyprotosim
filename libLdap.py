@@ -83,7 +83,7 @@ dict_RES={'success':0,
           'invalidCredentials':49,
           'insufficientAccessRights':50,
           'busy':51,
-          'unavailable':52,dictC
+          'unavailable':52,
           'unavailable':52,
           'unwillingToPerform':53,
           'loopDetect':54,
@@ -242,7 +242,7 @@ def encodeKeyValue(key,value):
     return ret
     
 #-----------------------------------------------------------------------------
-#Encoding section
+#Decoding section
 #-----------------------------------------------------------------------------
     
 # Decode according to ASN.1
