@@ -1,0 +1,15 @@
+# use glob syntax.
+syntax: glob
+
+*.pyc
+*.exe
+*.rhel
+*.solx86
+*.ubuntu
+*.pcap
+snoops/**
+doc/rfc/**
+
+# switch to regexp syntax.
+#syntax: regexp
+#^\.pc/
