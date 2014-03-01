@@ -1,14 +1,13 @@
 Python Protocol Simulator
 -----------------------------
 
-Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
+Copyright (c) 2012-2014, Sergej Srepfler <sergej.srepfler@gmail.com>
 EAP calculations use parts of hostapd code (http://w1.fi/hostapd)
 Copyright (c) 2004-2008, Jouni Malinen and contributors. All rights reserved.
 EAP-SIM calculations use a3a8 code (http://http://www.scard.org/gsm)
 Copyright 1998, Marc Briceno, Ian Goldberg, and David Wagner. All rights reserved.
 
-This program is licensed under the BSD license (the one with advertisement
-clause removed).
+This program is licensed under the BSD license.
 
 Intro
 -----
@@ -62,7 +61,7 @@ Features
   windows platform.)
 - tested with python 2.4-2.7
 - use simplified dictionary (minimal features - user must know what is needed)
-- easy encode unknown AVPs as HEX-stream (just copy it from wireshark)
+- easy encode unknown AVPs as HEX-string (just copy it from wireshark)
 - client examples included
 - supported protocols: RADIUS, DIAMETER, DHCP, LDAP, SMPP
 - EAP: calculate SIM keys
@@ -76,7 +75,7 @@ Features
 - LDAP: LDAP server simulator
 - tested on Linux, Solaris 10-x86 and Windows XP
 
-I did not bother too much to analyze/decode packets. Wireshark is much better 
+I did not bother too much to analyse/decode packets. Wireshark is much better 
 tool for such details. It should be rather easy to add support if you need it .
 Please note that it is not fully tested (I never needed some types, and I'm 
 not developing it as universal library, so be warned...)
@@ -139,7 +138,7 @@ naming/code, I just renamed them. And you also have DHCP dictionary :-)
 In LDAP I tried not to use dictionary, but I don't like how the code looks 
 like. So it is possible that I'll switch to "dictionary approach". And I do 
 not like how code decodes LDAP packet (not decoding itself, but determining 
-relations between them (parent/child)). So it will probaly change also. 
+relations between them (parent/child)). So it will probably change also. 
 
 Simplified dictionary
 ---------------------
