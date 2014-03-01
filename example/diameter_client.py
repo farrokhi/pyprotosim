@@ -6,17 +6,58 @@
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
-#Next two lines are to include parent directory for testing
-import sys
-sys.path.append("..")
-# Remove them normally
-
 # EAP-AKA/AKA' client
+
+import datetime
+import time
+import sys
+
+#Next line is to include parent directory in PATH where libraries are
+sys.path.append("..")
+# Remove it normally
 
 from libDiameter import *
 import eap
-import datetime
-import time
+
+# Full-Auth Procedure
+# 1)client sends Response Identity packet
+# 2)AAA ignores the packet and sends EAP-AKA-Start with ANY_ID_REQ
+# 3)client send it to AAA
+# 4)AAA obtains quintet from HLR/HSS: RAND is random 16-byte, other are calculated on HSS 
+#   use values from HSS response or milenagef2-5 to calculate the same keys
+#  Copy from 3GPP-SIP-Auth-Data-Item->3GPP-SIP-Authenticate to RAND (first 16 bytes) AUTN (last 16 bytes)
+#  Copy from 3GPP-SIP-Auth-Data-Item->3GPP-SIP-Authorization to RES
+#  Copy from 3GPP-SIP-Auth-Data-Item->Confidentiality-Key to CK
+#  Copy from 3GPP-SIP-Auth-Data-Item->Integrity-Key to IK
+# 5)AAA calculate keys from Identity,Ck,Ik
+#   calculated keys are MK,KENCR,KAUT,MSK,EMSK
+# 6)AAA generates NEXT_REAUTH_ID , NEXT_PSEUDONYM, COUNTER
+#   and encrypt them in ENCR_DATA using IV
+#   MAC is calculated over packet using KAUT and appended
+#   So final Challenge consists of RAND, AUTN, IV, ENCR_DATA, MAC
+# 7)client repeats milenagef2-5 based on OPc,K,RAND
+#   client calculates keys from Identity,Ck,Ik
+#   client decodes ENCR_DATA with IV,KENCR to get NEXT_REAUTH_ID , NEXT_PSEUDONYM, COUNTER
+#   In response client sends RES and MAC (using KAUT)
+# 8)AAA verifies MAC (calculates it again based on KAUT), and if RES matches, responds with Success or Failure
+
+# Fast-Reauth Procedure
+# 1)client sends Response Identity packet (IDENTITY=NEXT_REAUTH_ID)
+# 2)AAA ignores the packet and sends EAP-SIM-Start with ANY_ID_REQ+VERSION_LIST
+# 3)client chooses SELECTED_VERSION, and send it to AAA (together with IDENTITY)
+# 4)AAA uses previously obtained keys from HSS and previously calculated keys
+# 5)AAA generates IV, NEXT_REAUTH_ID , NONCE_S, increments COUNTER
+#   and encrypt them in ENCR_DATA using IV
+#    So final Reauth Request consists of RAND (next from HSS response), IV (randomly generated), ENCR_DATA
+#   MAC is calculated over packet using KAUT, NONCE_S and appended
+# 7)client uses previously calculated keys
+#   client decodes ENCR_DATA with IV,KENCR to get NEXT_REAUTH_ID, NONCE_S, COUNTER
+#   client generates new IV (random 16-bytes)
+#   client encrypt received COUNTER in ENCR_DATA using IV+KENCR
+#   client calculate MAC over packet using KAUT,NONCE_S
+#   So final Reauth Response has IV, ENCR_DATA (with COUNTER inside), MAC
+# 8)AAA verifies MAC (calculates it again based on KAUT,NONCE_S), decodes ENCR_DATA and if COUNTER matches, responds with Success or Failure
+
 
 def create_CER():
     # Let's build CER
@@ -105,7 +146,7 @@ def Payload_Challenge_Response(ID,RAND,ETYPE):
     # Add AT_RES
     EAP.avps.append(("AT_RES",XRES))
     # Add AT_MAC as last
-    eap.addMAC(EAP,KENCR,'') 
+    eap.addMAC(EAP,KAUT,'') 
     # Do not add any AVPs after adding MAC
     Payload=eap.encode_EAP(EAP)
     # Payload now contains EAP-Payload AVP
@@ -371,3 +412,4 @@ if __name__ == "__main__":
 # 0.2.6 - Apr 27, 2012 - First full-working version
 # 0.2.7 - May 25, 2012 - Code cleanup. id matching improoved
 # 0.3   - Oct 30, 2012 - lib renamed, eap params fix
+#       - Mar 01, 2014 - fixed bug in addMAC - it should use KAUT
