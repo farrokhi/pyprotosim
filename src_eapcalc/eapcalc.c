@@ -1,15 +1,12 @@
 /*
  * EAP calculations: EAP-SIM/AKA/AKA' shared routines
- * Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
+ * Copyright (c) 2012-2014, Sergej Srepfler <sergej.srepfler@gmail.com>
  * Using parts of hostapd code http://w1.fi/hostapd/
  * Copyright (c) 2004-2008, Jouni Malinen <j@w1.fi>
  *
  * This software is distributed under the terms of BSD license.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include "includes.h"
 #include "common.h"
 #include "wpa_debug.h"
@@ -40,7 +37,6 @@ void fromHex(u8* hex1, char* param) {
        for (i=2,h=0;i<=strlen(param)-2;i+=2) {
            sscanf(param+i,"%2x",&hexc);
            hex1[h++]=(u8)hexc;
-           hex1[h]=0;
        }
    }
 }
@@ -51,7 +47,6 @@ void dumpToHex(char* msg, u8* buf,int buf_size) {
    for (i=0;i<buf_size;i++) {
        printf ("%02X",(u8) buf[i]);
    }
-   //printf("  %d\n",buf_size);
    printf("\n");
 }
 
@@ -62,8 +57,84 @@ void * my_malloc(size_t size) {
    return var;
 }
 
-void calc_sim(char* p_identity, char* p_kc, char* p_nonce_mt, char* p_ver_list, char* p_selected_ver) {
-    u8* identity;
+void ComputeOPc( u8* k, u8* op, u8* opc ) {
+  int i;
+  
+  i=aes_128_encrypt_block( k, op, opc );
+  for (i=0; i<EAP_AKA_OPC_LEN; i++)
+    opc[i] ^= op[i];
+  return;
+} /* end of function ComputeOPc */
+
+
+void calc_computeOPc(char* p_op, char* p_k){
+    u8 op[EAP_AKA_OP_LEN];
+    u8 k[EAP_AKA_K_LEN];
+    u8 opc[EAP_AKA_OPC_LEN];
+    
+    fromHex(op,p_op);
+    fromHex(k,p_k);
+    // Debugging output to confirm correct input
+    dumpToHex("OP=",op,EAP_AKA_OP_LEN);
+    dumpToHex("K=",k,EAP_AKA_K_LEN);
+    ComputeOPc(k,op,opc);    
+    dumpToHex("OPc=",opc,EAP_AKA_OPC_LEN);    
+}
+
+void calc_milenage_f1(char* p_opc, char* p_k, char* p_rand,
+                      char* p_sqn, char* p_amf){
+    u8 opc[EAP_AKA_OPC_LEN];
+    u8 k[EAP_AKA_K_LEN];
+    u8 rand[EAP_AKA_RAND_LEN];
+    u8 sqn[EAP_AKA_SQN_LEN];
+    u8 amf[EAP_AKA_AMF_LEN];
+    u8 maca[EAP_AKA_XMAC_LEN];
+    u8 macs[EAP_AKA_MACS_LEN];
+    
+    fromHex(opc,p_opc);
+    fromHex(k,p_k);
+    fromHex(rand,p_rand);
+    fromHex(sqn,p_sqn);
+    fromHex(amf,p_amf);
+    // Debugging output to confirm correct input
+    dumpToHex("OPc=",opc,EAP_AKA_OPC_LEN);
+    dumpToHex("K=",k,EAP_AKA_K_LEN);
+    dumpToHex("RAND=",rand,EAP_AKA_RAND_LEN);
+    dumpToHex("SQN=",sqn,EAP_AKA_SQN_LEN);
+    dumpToHex("AMF=",amf,EAP_AKA_AMF_LEN);
+    // Now we have our input parameters
+    milenage_f1(opc,k,rand,sqn,amf,maca,macs);   
+    dumpToHex("XMAC=",maca,EAP_AKA_XMAC_LEN);
+    dumpToHex("MACS=",macs,EAP_AKA_MACS_LEN);
+}
+
+void calc_milenage_f2345(char* p_opc,char* p_k,char* p_rand) {
+    u8 opc[EAP_AKA_OPC_LEN];
+    u8 k[EAP_AKA_K_LEN];
+    u8 rand[EAP_AKA_RAND_LEN];
+    u8 xres[EAP_AKA_XRES_LEN];
+    u8 ck[EAP_AKA_CK_LEN];
+    u8 ik[EAP_AKA_IK_LEN];
+    u8 ak[EAP_AKA_AK_LEN];
+    u8 akstar[EAP_AKA_AK_LEN];
+   
+    fromHex(opc,p_opc);
+    fromHex(k,p_k);
+    fromHex(rand,p_rand);
+    // Debugging output to confirm correct input
+    dumpToHex("OPc=",opc,EAP_AKA_OPC_LEN);
+    dumpToHex("K=",k,EAP_AKA_K_LEN);
+    dumpToHex("RAND=",rand,EAP_AKA_RAND_LEN);
+    // Now we have our input parameters
+    milenage_f2345(opc,k,rand,xres,ck,ik,ak,akstar);
+    dumpToHex("XRES=",xres,EAP_AKA_XRES_LEN);
+    dumpToHex("CK=",ck,EAP_AKA_CK_LEN);
+    dumpToHex("IK=",ik,EAP_AKA_IK_LEN);
+    dumpToHex("AK=",ak,EAP_AKA_AK_LEN);
+    dumpToHex("AKS=",akstar,EAP_AKA_AK_LEN);
+}
+
+void calc_sim(u8* identity, char* p_kc, char* p_nonce_mt, char* p_ver_list, char* p_selected_ver) {
     u8* kc;
     u8 nonce_mt[EAP_SIM_NONCE_MT_LEN];
     u8* ver_list;
@@ -72,7 +143,7 @@ void calc_sim(char* p_identity, char* p_kc, char* p_nonce_mt, char* p_ver_list, 
     int ver_list_len;
     int kc_len;
     int nkc;
-    u8* mk;
+    u8 mk[EAP_SIM_MK_LEN];
     u8 kencr[EAP_SIM_K_ENCR_LEN];
     u8 kaut[EAP_SIM_K_AUT_LEN];
     u8 msk[EAP_SIM_KEYING_DATA_LEN];
@@ -80,10 +151,7 @@ void calc_sim(char* p_identity, char* p_kc, char* p_nonce_mt, char* p_ver_list, 
     u8 buf[EAP_AKA_PRF_LEN];
     int skip;
 
-    
-    identity_len=strlen(p_identity);
-    identity=my_malloc(identity_len);
-    strcpy(identity,p_identity);
+    identity_len=strlen((char *)identity);
     kc_len=strlen(p_kc)/2-1;
     kc=my_malloc(kc_len);
     fromHex(kc,p_kc);
@@ -102,11 +170,8 @@ void calc_sim(char* p_identity, char* p_kc, char* p_nonce_mt, char* p_ver_list, 
     printf("SELECTED_VER=%d\n",selected_ver);
     dumpToHex("VER_LIST=",ver_list,ver_list_len);    
     // Now we have our input parameters
-    mk=my_malloc(EAP_SIM_MK_LEN); 
-    eap_sim_derive_mk(identity, identity_len,
-		       nonce_mt, selected_ver,
-		       ver_list, ver_list_len,
-		       nkc, kc, mk);
+    eap_sim_derive_mk(identity, identity_len, nonce_mt, selected_ver,
+       ver_list, ver_list_len, nkc, kc, mk);
     dumpToHex("MK=",mk,EAP_SIM_MK_LEN);
     eap_sim_prf(mk,buf,sizeof(buf));
     dumpToHex("PRF=",buf,EAP_AKA_PRF_LEN);
@@ -170,159 +235,6 @@ void calc_aka(char* p_identity,char* p_ck, char* p_ik) {
     dumpToHex("EMSK=",emsk,EAP_EMSK_LEN);
 }
 
-void calc_mac_sim(char* p_kaut,char* p_data,char* p_msg) {
-    u8* msg;
-    u8* k_aut;
-    int msg_len;
-    u8* extra;
-    int extra_len;
-    u8* mac;
-    
-    msg_len=strlen(p_msg)/2;
-    msg=my_malloc(msg_len);
-    msg_len-=1;
-    k_aut=my_malloc(EAP_SIM_K_AUT_LEN);
-    extra_len=strlen(p_data)/2;
-    extra=my_malloc(extra_len);
-    extra_len-=1;
-    fromHex(msg,p_msg);
-    fromHex(k_aut,p_kaut);
-    fromHex(extra,p_data);
-    // Debugging output to confirm correct input
-    dumpToHex("K_aut=",k_aut,EAP_SIM_K_AUT_LEN);
-    dumpToHex("Data=",extra,extra_len);
-    dumpToHex("msg=",msg,msg_len);
-    // Now we have our input parameters
-    mac=my_malloc(EAP_AKAP_MAC_LEN);
-    eap_sim_add_mac(k_aut,msg,msg_len,mac,extra,extra_len);
-    dumpToHex("MAC=",mac,EAP_AKA_MAC_LEN);
-}
-
-void calc_mac_aka(char* p_kaut,char* p_msg) {
-    u8* msg;
-    u8* k_aut;
-    int msg_len;
-    u8* extra;
-    int extra_len;
-    u8* mac;
-    
-    msg_len=strlen(p_msg)/2;
-    msg=my_malloc(msg_len);
-    msg_len-=1;
-    k_aut=my_malloc(EAP_SIM_K_AUT_LEN);
-    fromHex(msg,p_msg);
-    fromHex(k_aut,p_kaut);
-    // Debugging output to confirm correct input
-    dumpToHex("msg=",msg,msg_len);
-    dumpToHex("K_aut=",k_aut,EAP_SIM_K_AUT_LEN);
-    // Now we have our input parameters
-    mac=my_malloc(EAP_AKAP_MAC_LEN);
-    extra=my_malloc(1);
-    extra_len=0;
-    eap_sim_add_mac(k_aut,msg,msg_len,mac,extra,extra_len);
-    dumpToHex("MAC=",mac,EAP_AKA_MAC_LEN);
-}
-
-void calc_mac_akaprime(char* p_kaut,char* p_msg) {
-    u8* msg;
-    u8* k_aut;
-    int msg_len;
-    u8* extra;
-    int extra_len;
-    u8* mac;
-    
-    msg_len=strlen(p_msg)/2;
-    msg=my_malloc(msg_len);
-    msg_len-=1;
-    k_aut=my_malloc(EAP_AKA_PRIME_K_AUT_LEN);
-    fromHex(msg,p_msg);
-    fromHex(k_aut,p_kaut);
-    // Debugging output to confirm correct input
-    dumpToHex("msg=",msg,msg_len);
-    dumpToHex("K_aut=",k_aut,EAP_AKA_PRIME_K_AUT_LEN);
-    // Now we have our input parameters
-    mac=my_malloc(EAP_AKAP_MAC_LEN);
-    extra=my_malloc(1);
-    extra_len=0;
-    eap_sim_add_mac_sha256(k_aut,msg,msg_len,mac,extra,extra_len);
-    dumpToHex("MAC=",mac,EAP_AKA_MAC_LEN);
-}
-
-void ComputeOPc( u8* k, u8* op, u8* opc ) {
-  int i;
-  
-  i=aes_128_encrypt_block( k, op, opc );
-  for (i=0; i<EAP_AKA_OPC_LEN; i++)
-    opc[i] ^= op[i];
-  return;
-} /* end of function ComputeOPc */
-
-void calc_milenage_f1(char* p_op, char* p_k, char* p_rand,
-                      char* p_sqn, char* p_amf){
-    u8* op;
-    u8* k;
-    u8 opc[EAP_AKA_OPC_LEN];
-    u8* rand;
-    u8* sqn;
-    u8* amf;
-    u8 maca[EAP_AKA_XMAC_LEN];
-    u8 macs[EAP_AKA_MACS_LEN];
-    
-    op=my_malloc(EAP_AKA_OP_LEN);
-    k=my_malloc(EAP_AKA_K_LEN);
-    rand=my_malloc(EAP_AKA_RAND_LEN);
-    sqn=my_malloc(EAP_AKA_SQN_LEN);
-    amf=my_malloc(EAP_AKA_AMF_LEN);
-    fromHex(op,p_op);
-    fromHex(k,p_k);
-    fromHex(rand,p_rand);
-    fromHex(sqn,p_sqn);
-    fromHex(amf,p_amf);
-    // Debugging output to confirm correct input
-    dumpToHex("OP=",op,EAP_AKA_OP_LEN);
-    dumpToHex("K=",k,EAP_AKA_K_LEN);
-    dumpToHex("RAND=",rand,EAP_AKA_RAND_LEN);
-    dumpToHex("SQN=",sqn,EAP_AKA_SQN_LEN);
-    dumpToHex("AMF=",amf,EAP_AKA_AMF_LEN);
-    // Now we have our input parameters
-    ComputeOPc(k,op,opc);
-    milenage_f1(opc,k,rand,sqn,amf,maca,macs);   
-    dumpToHex("XMAC=",maca,EAP_AKA_XMAC_LEN);
-    dumpToHex("MACS=",macs,EAP_AKA_MACS_LEN);
-}
-
-void calc_milenage_f2345(char* p_op,char* p_k,char* p_rand) {
-    u8* op;
-    u8* k;
-    u8 opc[EAP_AKA_OPC_LEN];
-    u8* rand;
-    u8 xres[EAP_AKA_XRES_LEN];
-    u8 ck[EAP_AKA_CK_LEN];
-    u8 ik[EAP_AKA_IK_LEN];
-    u8 ak[EAP_AKA_AK_LEN];
-    u8 akstar[EAP_AKA_AK_LEN];
-   
-    op=my_malloc(EAP_AKA_OP_LEN);
-    k=my_malloc(EAP_AKA_K_LEN);
-    rand=my_malloc(EAP_AKA_RAND_LEN);
-    fromHex(op,p_op);
-    fromHex(k,p_k);
-    fromHex(rand,p_rand);
-    // Debugging output to confirm correct input
-    dumpToHex("OP=",op,EAP_AKA_OP_LEN);
-    dumpToHex("K=",k,EAP_AKA_K_LEN);
-    dumpToHex("RAND=",rand,EAP_AKA_RAND_LEN);
-    // Now we have our input parameters
-    ComputeOPc(k,op,opc);
-    dumpToHex("OPc=",opc,EAP_AKA_OP_LEN);
-    milenage_f2345(opc,k,rand,xres,ck,ik,ak,akstar);
-    dumpToHex("XRES=",xres,EAP_AKA_XRES_LEN);
-    dumpToHex("CK=",ck,EAP_AKA_CK_LEN);
-    dumpToHex("IK=",ik,EAP_AKA_IK_LEN);
-    dumpToHex("AK=",ak,EAP_AKA_AK_LEN);
-    dumpToHex("AKS=",akstar,EAP_AKA_AK_LEN);
-}
-
 void calc_akaprime(char* p_identity, char* p_ck, char* p_ik) {
     char* identity;
     u8* ck;
@@ -358,6 +270,105 @@ void calc_akaprime(char* p_identity, char* p_ck, char* p_ik) {
     dumpToHex("KRE=",kre,EAP_AKA_PRIME_K_RE_LEN);
     dumpToHex("MSK=",msk,EAP_MSK_LEN);
     dumpToHex("EMSK=",emsk,EAP_EMSK_LEN);
+}
+
+void calc_mac_sim(char* p_kaut,char* p_msg,char* p_data) {
+    u8* msg;
+    u8* k_aut;
+    int msg_len;
+    u8* extra;
+    int extra_len;
+    u8* mac;
+    
+    msg_len=strlen(p_msg)/2-1;
+    msg=my_malloc(msg_len);
+    k_aut=my_malloc(EAP_SIM_K_AUT_LEN);
+    fromHex(msg,p_msg);
+    fromHex(k_aut,p_kaut);
+    if (p_data!=NULL) {
+        extra_len=strlen(p_data)/2-1;
+        extra=my_malloc(extra_len);
+        fromHex(extra,p_data);         
+        printf("Data included %d\n",extra_len);
+    }
+    else {
+        extra_len=0;
+        extra=my_malloc(1);
+    }    
+    // Debugging output to confirm correct input
+    dumpToHex("Kaut=",k_aut,EAP_SIM_K_AUT_LEN);
+    dumpToHex("Msg=",msg,msg_len);
+    dumpToHex("Data=",extra,extra_len);    
+    // Now we have our input parameters
+    mac=my_malloc(EAP_AKAP_MAC_LEN);
+    eap_sim_add_mac(k_aut,msg,msg_len,mac,extra,extra_len);
+    dumpToHex("MAC=",mac,EAP_AKA_MAC_LEN);
+}
+
+void calc_mac_aka(char* p_kaut,char* p_msg,char* p_data) {
+    u8* msg;
+    u8* k_aut;
+    int msg_len;
+    u8* extra;
+    int extra_len;
+    u8* mac;
+    
+    msg_len=strlen(p_msg)/2-1;
+    msg=my_malloc(msg_len);
+    k_aut=my_malloc(EAP_SIM_K_AUT_LEN);
+    fromHex(msg,p_msg);
+    fromHex(k_aut,p_kaut);
+    if (p_data!=NULL) {
+        extra_len=strlen(p_data)/2-1;
+        extra=my_malloc(extra_len);
+        fromHex(extra,p_data);   
+        printf("Data included %d\n",extra_len);        
+    }
+    else {
+        extra_len=0;
+        extra=my_malloc(1);
+    }    
+    // Debugging output to confirm correct input
+    dumpToHex("Kaut=",k_aut,EAP_SIM_K_AUT_LEN);
+    dumpToHex("Msg=",msg,msg_len);
+    dumpToHex("Data=",extra,extra_len);    
+    // Now we have our input parameters
+    mac=my_malloc(EAP_AKAP_MAC_LEN);
+    eap_sim_add_mac(k_aut,msg,msg_len,mac,extra,extra_len);
+    dumpToHex("MAC=",mac,EAP_AKA_MAC_LEN);
+}
+
+void calc_mac_akaprime(char* p_kaut,char* p_msg,char* p_data) {
+    u8* msg;
+    u8* k_aut;
+    int msg_len;
+    u8* extra;
+    int extra_len;
+    u8* mac;
+    
+    msg_len=strlen(p_msg)/2-1;
+    msg=my_malloc(msg_len);
+    k_aut=my_malloc(EAP_AKA_PRIME_K_AUT_LEN);
+    fromHex(msg,p_msg);
+    fromHex(k_aut,p_kaut);
+    if (p_data!=NULL) {
+        extra_len=strlen(p_data)/2-1;
+        extra=my_malloc(extra_len);
+        fromHex(extra,p_data);         
+        printf("Data included %d\n",extra_len);
+    }
+    else {
+        extra_len=0;
+        extra=my_malloc(1);
+    }    
+    // Debugging output to confirm correct input
+    dumpToHex("Kaut=",k_aut,EAP_AKA_PRIME_K_AUT_LEN);
+    dumpToHex("Msg=",msg,msg_len);
+    dumpToHex("Data=",extra,extra_len);
+    // Now we have our input parameters
+    mac=my_malloc(EAP_AKAP_MAC_LEN);
+    eap_sim_add_mac_sha256(k_aut,msg,msg_len,mac,extra,extra_len);
+    dumpToHex("MAC=",mac,EAP_AKA_MAC_LEN);
 }
 
 void calc_encrypt(char* p_kencr, char* p_iv, char* p_msg) {
@@ -430,32 +441,35 @@ int main(int argc, char *argv[]) {
         if (strcmp(argv[1],"sim")==0) { //SIM key calculation
             // in:identity, n*kc, nonce_mt, ver_list, selected_ver
             // out: keys
-            calc_sim(argv[2],argv[3],argv[4],argv[5],argv[6]);
+            calc_sim((u8*)argv[2],argv[3],argv[4],argv[5],argv[6]);
         }
         if (strcmp(argv[1],"aka")==0) { //AKA key calculation
             // in:Identity,Ck,Ik
             // out: keys
             calc_aka(argv[2],argv[3],argv[4]);
         }
-        if (strcmp(argv[1],"akaprime")==0) { //AKA' key calculation
+        if (strcmp(argv[1],"akaprime")==0) { //AKAPrime key calculation
             // in:Identity,Ck,Ik
             // out: keys
             calc_akaprime(argv[2],argv[3],argv[4]);
         }
         if (strcmp(argv[1],"mac-sim")==0) { //HMAC sim-sha1 calculation
-            // in: k_aut,data,msg
+           // in: k_aut,msg,data
             // out: hmac-sha1
-            calc_mac_sim(argv[2],argv[3],argv[4]);  
+            if (argc==5) { calc_mac_sim(argv[2],argv[3],argv[4]); }
+            else { calc_mac_sim(argv[2],argv[3], NULL); }
         }
         if (strcmp(argv[1],"mac-aka")==0) { //HMAC sha1 calculation
-            // in: k_aut,msg
+            // in: k_aut,msg,data
             // out: hmac-sha1
-            calc_mac_aka(argv[2],argv[3]);  
+            if (argc==5) { calc_mac_aka(argv[2],argv[3],argv[4]); }
+            else { calc_mac_aka(argv[2],argv[3], NULL); }            
         }
         if (strcmp(argv[1],"mac-akaprime")==0) { //HMAC sha256 calculation
-            // in: k_aut,msg
+            // in: k_aut,msg,data
             // out: hmac-sha256
-            calc_mac_akaprime(argv[2],argv[3]);  
+            if (argc==5) { calc_mac_akaprime(argv[2],argv[3],argv[4]); }
+            else { calc_mac_akaprime(argv[2],argv[3], NULL); }            
         }
         if (strcmp(argv[1],"milenage-f2345")==0) { //milenage f2345
             // in: OP,K,RAND
@@ -467,32 +481,46 @@ int main(int argc, char *argv[]) {
             // out: MAC_A(XMAC),MAC_S,AK*
             calc_milenage_f1(argv[2],argv[3],argv[4],argv[5],argv[6]);
         }
-        if (strcmp(argv[1],"encode")==0) { //aes_128_cbc
+        if (strcmp(argv[1],"computeOPc")==0) { //compute OPc
+            // in: OP,K
+            // out: OPc
+            calc_computeOPc(argv[2],argv[3]);
+        }
+        if (strcmp(argv[1],"encrypt")==0) { //aes_128_cbc
             // in: IV, K_encr, msg
             // out: encoded msg
             calc_encrypt(argv[3],argv[2],argv[4]);
         }
-        if (strcmp(argv[1],"decode")==0) { //aes_128_cbc
+        if (strcmp(argv[1],"decrypt")==0) { //aes_128_cbc
             // in: IV, K_encr, msg
             // out: decoded msg
             calc_decrypt(argv[3],argv[2],argv[4]);
         }
     }
     else {
-        printf("EAP calculator V 0.3 Copyright (c) 2012 by Sergej Srepfler\n");
+        printf("EAP calculator V 0.3.2 Copyright (c) 2012-2014 by Sergej Srepfler\n");
         printf("Using parts of hostapd Copyright (c) 2004-2008, Jouni Malinen and contributors\n");
         printf("\ncommands are\n");
         printf("sim <Identity> <0xn*Kc> <0xNONCE_MT> <0xVER_LIST> <selected_ver>\n");
         printf("aka <Identity> <0xCk> <0xIk>\n");
         printf("akaprime <Identity> <0xCk> <0xIk>\n");
-        printf("mac-sim <0xK_aut> <0xDATA> <0xMSG>\n");
-        printf("mac-aka <0xK_aut> <0xMSG>\n");
-        printf("mac-akaprime <0xK_aut> <0xMSG>\n");
-        printf("milenage-f2345 <0xOP> <0xK> <0xRAND>\n");
-        printf("milenage-f1 <0xOP> <0xK> <0xRAND> <0xSQN> <0xAMF>\n");
-        printf("encode <0xIV> <0xK_encr> <0xMSG>\n");
-        printf("decode <0xIV> <0xK_encr> <0xMSG>\n");
+        printf("mac-sim <0xK_aut> <0xMSG> [0xDATA]\n");
+        printf("mac-aka <0xK_aut> <0xMSG> [0xDATA]\n");
+        printf("mac-akaprime <0xK_aut> <0xMSG> [0xDATA]\n");
+        printf("computeOPc <0xOP> <0xK>\n");
+        printf("milenage-f1 <0xOPc> <0xK> <0xRAND> <0xSQN> <0xAMF>\n");
+        printf("milenage-f2345 <0xOPc> <0xK> <0xRAND>\n");
+        printf("encrypt <0xIV> <0xK_encr> <0xMSG>\n");
+        printf("decrypt <0xIV> <0xK_encr> <0xMSG>\n");
     }
     return 0;
 }
 
+/*
+#####################################################        
+# History
+# 0.3
+# 0.3.2 - Mar 01 '14 - computeOPc separated, renamed encode/decode to encrypt/decrypt
+#                    - fixed param passing for MAC calculation (when NONCE_S is used for AKA)
+#                    NOTE: BREAKING COMPATIBILITY due to extending number of params
+*/

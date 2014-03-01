@@ -1,9 +1,10 @@
 #!/bin/sh
 ##################################################################
-# Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
+# Copyright (c) 2012-2014, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 - 
-# Version 0.3 Last change at Oct 22, 2012
+# Version 0.3.2 Last change at Mar 01, 2014
 # Automated testing tool to verify correct computations
+# This software is distributed under the terms of BSD license.
 ##################################################################
 
 # To enable shell debugging insert "set -x" where needed
@@ -22,9 +23,9 @@ checkIfExist () {
 checkResult () {
   if [ "$2" = "$3" ]
   then
-    echo "$1 PASS!!"
+    echo "$1 PASSED"
   else
-    echo "$1 FAIL!!!!"
+    echo "$1 FAILED!!!!!!!!"
   fi
 }
 
@@ -96,21 +97,36 @@ done
 checkResult "AKA'" $OK "XXXXX"
 
 ##############################
-# MAC-SIM Calculation
+# MAC-SIM2 Calculation
+##############################
+msg="0x010100441701000001050000ce9e2d867cc86dde4cc87899136184d5020500001122334455668001aabbccddeeff99770B05000000000000000000000000000000000000"
+K="0x146EF214DFEFBC6BF59D002C0300F95D"
+#set -x
+RES=`$EXE mac-sim $K $msg`
+#set +x
+OK=""
+for p in $RES
+do
+  checkIfExist $p MAC=C7D90F86D0F9096989C0334A733952F9
+done
+checkResult "MAC-SIM2" $OK "X"
+
+##############################
+# MAC-SIM3 Calculation
 ##############################
 msg="0x010100441701000001050000ce9e2d867cc86dde4cc87899136184d5020500001122334455668001aabbccddeeff99770B05000000000000000000000000000000000000"
 K="0x146EF214DFEFBC6BF59D002C0300F95D"
 E="0x3333333333333333FFFFFFFFFFFFFFFF"
-RES=`$EXE mac-sim $K $E $msg `
+RES=`$EXE mac-sim $K $msg $E`
 OK=""
 for p in $RES
 do
   checkIfExist $p MAC=78F2FD7A52D6E07146307E684B4B9AAB
 done
-checkResult "MAC-SIM" $OK "X"
+checkResult "MAC-SIM3" $OK "X"
 
 ##############################
-# MAC-AKA Calculation
+# MAC-AKA2 Calculation
 ##############################
 msg="0x010100441701000001050000ce9e2d867cc86dde4cc87899136184d5020500001122334455668001aabbccddeeff99770B05000000000000000000000000000000000000"
 K="0x146EF214DFEFBC6BF59D002C0300F95D"
@@ -120,7 +136,23 @@ for p in $RES
 do
   checkIfExist $p MAC=C7D90F86D0F9096989C0334A733952F9
 done
-checkResult "MAC-AKA" $OK "X"
+checkResult "MAC-AKA2" $OK "X"
+
+##############################
+# MAC-AKA3 Calculation
+##############################
+msg="0x010100441701000001050000ce9e2d867cc86dde4cc87899136184d5020500001122334455668001aabbccddeeff99770B05000000000000000000000000000000000000"
+K="0x146EF214DFEFBC6BF59D002C0300F95D"
+E="0x3333333333333333FFFFFFFFFFFFFFFF"
+#set -x
+RES=`$EXE mac-aka $K $msg $E`
+#set +x
+OK=""
+for p in $RES
+do
+  checkIfExist $p MAC=78F2FD7A52D6E07146307E684B4B9AAB
+done
+checkResult "MAC-AKA3" $OK "X"
 
 ##############################
 # MAC-AKAPRIME Calculation
@@ -133,17 +165,46 @@ for p in $RES
 do
   checkIfExist $p MAC=F83BF724FAC1CA5242419D91EB3CAA82
 done
-checkResult "MAC-AKAPRIME" $OK "X"
+checkResult "MAC-AKAPRIME2" $OK "X"
+
+##############################
+# MAC-AKAPRIME3 Calculation
+##############################
+msg="0x010100443201000001050000ce9e2d867cc86dde4cc87899136184d5020500001122334455668001aabbccddeeff99770B05000000000000000000000000000000000000"
+K="0x6759D0953F781F4CB4BEEF834EFBA07BCFB808D9B9CFE519BE8248D25E513D9C"
+E="0x3333333333333333FFFFFFFFFFFFFFFF3333333333333333FFFFFFFFFFFFFFFF"
+#set -x
+RES=`$EXE mac-akaprime $K $msg $E `
+#set +x
+OK=""
+for p in $RES
+do
+  checkIfExist $p MAC=AD1B1A46EBF1F54D9260D0833BBFDD73
+done
+checkResult "MAC-AKAPRIME3" $OK "X"
+
+##############################
+# computeOPc Calculation
+##############################
+OP="0x00112233445566778899aabbccddeeff"
+K="0x22222222222222222222222222222222"
+RES=`$EXE computeOPc $OP $K`
+OK=""
+for p in $RES
+do
+  checkIfExist $p OPc=F3C7745CD602CEEBDD3E9E043C6E8E37
+done
+checkResult "COMPUTEOPC" $OK "X"
 
 ##############################
 # Milenage-f1 Calculation
 ##############################
-OP="0x00112233445566778899aabbccddeeff"
+OPc="0xF3C7745CD602CEEBDD3E9E043C6E8E37"
 K="0x22222222222222222222222222222222"
 RAND="0x1234567890abcdef1234567890abcdef"
 SQN="0x123456789012"
 AMF="0x1234"
-RES=`$EXE milenage-f1 $OP $K $RAND $SQN $AMF`
+RES=`$EXE milenage-f1 $OPc $K $RAND $SQN $AMF`
 OK=""
 for p in $RES
 do
@@ -155,10 +216,10 @@ checkResult "MILENAGE-F1" $OK "XX"
 ##############################
 # Milenage-F2345 Calculation
 ##############################
-OP="0x00112233445566778899aabbccddeeff"
+OPc="0xF3C7745CD602CEEBDD3E9E043C6E8E37"
 K="0x22222222222222222222222222222222"
 RAND="0x1234567890abcdef1234567890abcdef"
-RES=`$EXE milenage-f2345 $OP $K $RAND`
+RES=`$EXE milenage-f2345 $OPc $K $RAND`
 OK=""
 for p in $RES
 do
@@ -177,7 +238,7 @@ checkResult "MILENAGE-F2345" $OK "XXXXXX"
 kencr="0x3BD3EA34272177EF4655F196E3350EBB"
 iv="0x52AB55A91E98EF3A55D92B9203A88BE4"
 msg="0x850D00303447744C6D493038434359364153615842515A5A716D445A6E684367484A4B6B394A6A707538455A504D6979736B553D060300000000000000000000"
-RES=`$EXE encode $iv $kencr $msg`
+RES=`$EXE encrypt $iv $kencr $msg`
 OK=""
 for p in $RES
 do
@@ -191,7 +252,7 @@ checkResult "AES128-ENCODE" $OK "X"
 kencr="0x3BD3EA34272177EF4655F196E3350EBB"
 iv="0x52AB55A91E98EF3A55D92B9203A88BE4"
 msg="0x5461D3A9C60F07C45B1752EEFD2782117F0789893E260565300060E7B38069AAD30E3AA689CA8B4EB66926D9D48F13A581FE87CBBE8F908CEAAF6FC6E6F619A9"
-RES=`$EXE decode $iv $kencr $msg`
+RES=`$EXE decrypt $iv $kencr $msg`
 OK=""
 for p in $RES
 do
@@ -202,7 +263,7 @@ checkResult "AES128-DECODE" $OK "X"
 
 ######################################################        
 # History
-# Ver 0.2.5 - May 25, 2012 - Calculating EAP-AKA,EAP-AKA'
-# Ver 0.2.8 - Aug 2012 - SIM calculations added
-# Ver 0.3   - Oct 22, 2012 - Value for mac-sim was wrong. Platform automatically recognized
-
+# 0.2.5 - May 25, '12 - Calculating EAP-AKA,EAP-AKA'
+# 0.2.8 - Aug ??, '12 - SIM calculations added
+# 0.3   - Oct 22, '12 - Value for mac-sim was wrong. Platform automatically recognized
+# 0.3.2 - Mar 01, '14 - Aded tests for 2/3 params for AKA/AKA'
