@@ -740,7 +740,7 @@ def createRes(H,auth,avps):
     H.msg=joinAVPs(avps)
     H.authenticator=calcAuthenticator(H,auth,secret)
     ret=createPacket(H)
-    return 0
+    return res
 
 #---------------------------------------------------------------------- 
 # Main message decoding routine
