@@ -6,17 +6,56 @@
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
-#Next two lines are to include parent directory for testing
-import sys
-sys.path.append("..")
-# Remove them normally
-
 # Radius EAP-SIM client
+
+import datetime
+import time
+import sys
+
+#Next line is to include parent directory in PATH where libraries are
+sys.path.append("..")
+# Remove it normally
 
 from libRadius import *
 import eap
-import datetime
-import time
+
+# Full-Auth Procedure
+# 1)client sends Response Identity packet
+# 2)AAA ignores the packet and sends EAP-SIM-Start with ANY_ID_REQ+VERSION_LIST
+# 3)client chooses SELECTED_VERSION, generates random 16-byte NONCE_MT and send it to AAA (together with IDENTITY)
+# 4)AAA obtains 3xtriplet from HLR/HSS: RAND is random 16-byte, SRES&KC are calculated on HSS by A3A8 based on subscriber secret key K
+#   use values from HSS response or A3A8 to calculate the same keys
+#   Copy from SIP-Auth-Data-Item->Authentication-Information-SIM(301) RAND (first 16 bytes),KC(last 8 bytes)
+#   Copy from SIP-Auth-Data-Item->Authorization-Information-SIM(302) SRES (4 bytes)
+# 5)AAA calculate keys from Identity,3*KC,NONCE_MT,VERSION_LIST,SELECTED_VERSION
+#   calculated keys are KENCR,KAUT,MSK,EMSK,MK
+# 6)AAA generates NEXT_REAUTH_ID , NEXT_PSEUDONYM, COUNTER
+#   and encrypt them in ENCR_DATA using IV
+#   MAC is calculated over packet using KAUT,NONCE_MT and appended
+#   So final Challenge consists of RAND, IV, ENCR_DATA, MAC
+# 7)client repeats a3a8 based on RAND,K
+#   client calculates keys from Identity,3*KC,NONCE_MT,VERSION_LIST,SELECTED_VERSION
+#   client decodes ENCR_DATA with IV,KENCR to get NEXT_REAUTH_ID , NEXT_PSEUDONYM, COUNTER
+#   client calculate MAC over packet using KAUT,NONCE_MT
+#   So final Challenge Response has MAC
+# 8)AAA verifies MAC (calculates it again based on KAUT,NONCE_MT), and if matches, responds with Success or Failure
+# ============================================================
+# Fast-Reauth Procedure
+# 1)client sends Response Identity packet (IDENTITY=NEXT_REAUTH_ID)
+# 2)AAA ignores the packet and sends EAP-SIM-Start with ANY_ID_REQ+VERSION_LIST
+# 3)client chooses SELECTED_VERSION, generates random 16-byte NONCE_MT and send it to AAA (together with IDENTITY)
+# 4)AAA uses previously obtained keys from HSS and previously calculated keys
+# 5)AAA generates IV, NEXT_REAUTH_ID ,NONCE_S, increments COUNTER
+#   and encrypt them in ENCR_DATA using IV
+#    So final Reauth Request consists of RAND (next from HSS response), IV (randomly generated), ENCR_DATA
+#   MAC is calculated over packet using KAUT,NONCE_S and appended
+# 7)client uses previously calculated keys
+#   client decodes ENCR_DATA with IV,KENCR to get NEXT_REAUTH_ID, NONCE_S, COUNTER
+#   client generates new IV (random 16-bytes)
+#   client encrypt received COUNTER in ENCR_DATA using IV
+#   client calculate MAC over packet using KAUT,NONCE_S
+#   So final Reauth Response has IV, ENCR_DATA, MAC
+# 8)AAA verifies MAC (calculates it again based on KAUT,NONCE_S), and if matches, responds with Success or Failure
 
 def prepareKeysFromTriplets(a1,a2,a3):
     #a=Authentication-Information-SIM

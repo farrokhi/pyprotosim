@@ -6,17 +6,58 @@
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
-#Next two lines are to include parent directory for testing
-import sys
-sys.path.append("..")
-# Remove them normally
-
 # Radius EAP-AKA client
+
+import sys
+import datetime
+import time
+
+#Next line is to include parent directory in PATH where libraries are
+sys.path.append("..")
+# Remove it normally
 
 from libRadius import *
 import eap
-import datetime
-import time
+
+# Full-Auth Procedure
+# 1)client sends Response Identity packet
+# 2)AAA ignores the packet and sends EAP-AKA-Start with ANY_ID_REQ
+# 3)client send it to AAA
+# 4)AAA obtains quintet from HLR/HSS: RAND is random 16-byte, others are calculated on HSS 
+#   use values from HSS response or milenagef2-5 to calculate the same keys
+#  Copy from 3GPP-SIP-Auth-Data-Item->3GPP-SIP-Authenticate to RAND (first 16 bytes) AUTN (last 16 bytes)
+#  Copy from 3GPP-SIP-Auth-Data-Item->3GPP-SIP-Authorization to XRES
+#  Copy from 3GPP-SIP-Auth-Data-Item->Confidentiality-Key to CK
+#  Copy from 3GPP-SIP-Auth-Data-Item->Integrity-Key to IK
+# 5)AAA calculate keys from Identity,Ck,Ik
+#   calculated keys are KENCR,KAUT,MSK,EMSK,MK
+# 6)AAA generates NEXT_REAUTH_ID , NEXT_PSEUDONYM, COUNTER
+#   and encrypt them in ENCR_DATA using IV (with padding)
+#   MAC is calculated over packet using KAUT and appended
+#   So final Challenge consists of RAND, AUTN, IV, ENCR_DATA, MAC
+# 7)client repeats milenagef2-5 based on OPc,K,RAND to get Ck, Ik, Xres, AK
+#   client repeats milenagef1 based on OPc,K, RAND, AMF, SQN to get XMAC
+#   AUTN is actually SQN xor AK + AMF + XMAC
+#   client calculates keys from Identity,Ck,Ik
+#   client decodes ENCR_DATA with IV,KENCR to get NEXT_REAUTH_ID , NEXT_PSEUDONYM, COUNTER
+#   In response client sends RES (containing XRES) and MAC ( using KAUT)
+# 8)AAA verifies MAC (calculates it again based on KAUT), and if matches, responds with Success or Failure
+# ============================================================
+# Fast-Reauth Procedure
+# 1)client sends Response Identity packet (AT_IDENTITY=NEXT_REAUTH_ID)
+# Note: If Identity packet is sent, ANY_ID_REQ is responded till AT_IDENTITY is received
+# 2)AAA uses previously obtained keys from HSS and previously calculated keys
+# 3)AAA generates IV, NEXT_REAUTH_ID ,NONCE_S, increments COUNTER
+#   and encrypt them in ENCR_DATA using IV
+#    So Reauth Challenge Request consists of IV (randomly generated), ENCR_DATA
+#   MAC is calculated over packet using KAUT,NONCE_S and appended
+# 4)client uses previously calculated keys
+#   client decodes ENCR_DATA with IV,KENCR to get NEXT_REAUTH_ID, NONCE_S, COUNTER
+#   client generates new IV (random 16-bytes)
+#   client encrypt received COUNTER in ENCR_DATA using IV (with padding)
+#   client calculate MAC over packet using KAUT,NONCE_S
+#   So final Reauth Response has IV, ENCR_DATA, MAC
+# 5)AAA verifies MAC (calculates it again based on KAUT,NONCE_S), and if matches, responds with Success or Failure
 
 def prepareKeysFromTriplets(a1,a2,a3):
     #a=Authentication-Information-SIM
