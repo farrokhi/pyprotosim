@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 ##################################################################
-# Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
-# February 2012 - May 2012
-# Version 0.2.8, Last change on May 31, 2012
+# Copyright (c) 2012-2014, Sergej Srepfler <sergej.srepfler@gmail.com>
+# February 2012 -
+# Version 0.3.2, Last change on Mar 01, 2014
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
@@ -14,7 +14,6 @@ import sys
 import logging
 import time
 import platform
-#import string
 
 # subprocess does not work as expected in python 2.4
 # so we use commands instead
@@ -50,6 +49,7 @@ class EAPItem:
         self.avps=[]
 
 #----------------------------------------------------------------------
+
 
 # Quit program with error
 def e_bailOut(msg):
@@ -416,11 +416,11 @@ def exec_calc(cmd_type,params):
         MSK=findValue(ret,"MSK=")
         EMSK=findValue(ret,"EMSK=")
         return KENCR,KAUT,MSK,EMSK,KRE
-    if cmd_type=="encode":
+    if cmd_type=="encrypt":
         #ENCR_DATA
         DATA=findValue(ret,"ENCRYPTED=")
         return DATA
-    if cmd_type=="decode":
+    if cmd_type=="decrypt":
         #RAW_DATA
         DATA=findValue(ret,"DECRYPTED=")
         return DATA
@@ -437,7 +437,7 @@ def findValue(res,start):
            return ll[1]
     return ERROR
 
-def addMAC(E,K,D):
+def addMAC(E,K,extra=""):
     E.avps.append(("AT_MAC","00"*16))
     tmp=encode_EAP(E)
     #Clear it so we can do it again
@@ -452,10 +452,9 @@ def addMAC(E,K,D):
     # Do the calc
     dbg="Calculate ",hmac_type,K,tmp
     logging.debug(dbg)
-    params="0x"+K
-    if E.type==EAP_TYPE_SIM:
-        params+=" 0x"+D
-    params+=" 0x"+tmp
+    params="0x"+K+" 0x"+tmp    
+    if len(extra)>0:
+        params+=" 0x"+extra
     MAC=exec_calc(hmac_type,params) 
     dbg="Output ",MAC
     logging.debug(dbg)
@@ -475,12 +474,10 @@ def sim_calc_keys(Identity,KC,NONCE_MT,VERSION_LIST,SELECTED_VER):
     dbg="Calculating SIM keys",params
     logging.debug(dbg)
     KENCR,KAUT,MSK,EMSK,MK=exec_calc("sim",params)
-    dbg="Output KENCR",KENCR
-    logging.debug(dbg)
     return KENCR,KAUT,MSK,EMSK,MK
     
-def aka_calc_milenage(OP,K,RAND):
-    params="0x"+OP+" 0x"+K+" 0x"+RAND
+def aka_calc_milenage(OPc,K,RAND):
+    params="0x"+OPc+" 0x"+K+" 0x"+RAND
     XRES,CK,IK,AK,AKS=exec_calc("milenage-f2345",params)
     return XRES,CK,IK,AK,AKS
 
@@ -489,8 +486,6 @@ def aka_calc_keys(Identity,Ck,Ik):
     dbg="Calculating AKA keys",params
     logging.debug(dbg)
     KENCR,KAUT,MSK,EMSK,MK=exec_calc("aka",params)
-    dbg="Output KENCR",KENCR
-    logging.debug(dbg)
     return KENCR,KAUT,MSK,EMSK,MK
 
 def akap_calc_keys(Identity,Ck,Ik):
@@ -498,13 +493,11 @@ def akap_calc_keys(Identity,Ck,Ik):
     dbg="Calculating AKA' keys",params
     logging.debug(dbg)
     KENCR,KAUT,MSK,EMSK,KRE=exec_calc("akaprime",params)
-    dbg="Output KENCR",KENCR
-    logging.debug(dbg)
     return KENCR,KAUT,MSK,EMSK,KRE
 
 def decrypt_data(Iv,Kencr,encr_data):
     params="0x"+Iv+" 0x"+Kencr+" 0x"+encr_data
-    DATA=exec_calc("decode",params)
+    DATA=exec_calc("decrypt",params)
     return DATA
 
 def xor_string(s1, s2):
