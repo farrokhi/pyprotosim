@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+##################################################################
+# Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
+# February 2012 - March 2014
+# Version 0.1.1, Last change on Mar 06, 2014
+# This software is distributed under the terms of BSD license.    
+##################################################################
+
 #Next two lines are to include parent directory for testing
 
 import sys
@@ -17,10 +24,6 @@ import datetime
 import time
 
 
- 
-
- 
-
 def create_RAR():
     
     # Let's build RAR-T
@@ -29,7 +32,7 @@ def create_RAR():
     RAR_avps.append(encodeAVP('Product-Name', 'PCRF'))
     RAR_avps.append(encodeAVP('Supported-Vendor-Id', 0))
     RAR_avps.append(encodeAVP('Supported-Vendor-Id', 10415))
-    RAR_avps.append(encodeAVP('Supported-Vendor-Id', 12645))
+    RAR_avps.append(encodeAVP('Supported-Vendor-Id', 11111))
     RAR_avps.append(encodeAVP('Auth-Application-Id', 16777238))
     RAR_avps.append(encodeAVP('Destination-Realm', 'myrealm.example'))
     RAR_avps.append(encodeAVP('Destination-Host', 'vmclient.myrealm.example'))
