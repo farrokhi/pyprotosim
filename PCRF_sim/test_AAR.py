@@ -1,6 +1,12 @@
 #!/usr/bin/python
+##################################################################
+# Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
+# February 2012 - March 2014
+# Version 0.2.9, Last change on Mar 06, 2014
+# This software is distributed under the terms of BSD license.    
+##################################################################
 
-# Example of P-CSCF or PGW or AF AAR request (Rx)
+# Example of AAR request (Rx) from AF to PCRF
 
 #Next two lines are to include parent directory for testing
 import sys
@@ -48,7 +54,7 @@ AAR_avps.append(encodeAVP('Origin-Host', 'vmclient.myrealm.example'))
 AAR_avps.append(encodeAVP('Session-Id', 'vmclient.myrealm.example;1094791309121_1385989500_428022'))
 AAR_avps.append(encodeAVP('Origin-Realm', 'myrealm.example'))
 AAR_avps.append(encodeAVP('Vendor-Id', 11111))
-AAR_avps.append(encodeAVP('Product-Name', 'PCEF'))
+AAR_avps.append(encodeAVP('Product-Name', 'AF'))
 AAR_avps.append(encodeAVP('Supported-Vendor-Id', 0))
 AAR_avps.append(encodeAVP('Supported-Vendor-Id', 10415))
 AAR_avps.append(encodeAVP('Supported-Vendor-Id', 11112))
