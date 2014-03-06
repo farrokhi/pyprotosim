@@ -1,14 +1,20 @@
 #!/usr/bin/python
+##################################################################
+# Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
+# February 2012 - March 2014
+# Version 0.1.1, Last change on Mar 06, 2014
+# This software is distributed under the terms of BSD license.    
+##################################################################
 
 #####################################################################################
-# Simple PCRF GX SIMULATOR server example, v2.0
+# Simple PCRF GX SIMULATOR server example, v2.0 <lavrbel@gmail.com>
 # Will just reply on CCR-I, CCR-U, CCR-T request with CCA-I(U) and one PCC Charging-Install rule
 # It will use CCR-I or U messages to extract msisdn and session id and insert them into CCA-I(U) response
 # Set your own PCC rule in code below  
 # Set your IP address in HOST parameter : e.g HOST = "127.0.0.1"
 # This server supports CER,DWR,DPR,CCR-I,CCR-U,CCR-T,RAR-U,RAR-T
 # History of changes:
-# 06.03.2014 - added AAR/AAA over Rx interface <lavrbel@gmail.com>
+# 06.03.2014 - added AAR/AAA over Rx interface for AF <lavrbel@gmail.com>
 # *****************************************************************
 # This simulator is based on PyProtosim opensource software which is distributed under 
 # the terms of BSD license.
