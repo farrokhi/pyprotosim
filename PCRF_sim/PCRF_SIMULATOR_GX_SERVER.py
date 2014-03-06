@@ -1,12 +1,14 @@
 #!/usr/bin/python
 
 #####################################################################################
-# Simple PCRF GX SIMULATOR server example.
+# Simple PCRF GX SIMULATOR server example, v2.0
 # Will just reply on CCR-I, CCR-U, CCR-T request with CCA-I(U) and one PCC Charging-Install rule
 # It will use CCR-I or U messages to extract msisdn and session id and insert them into CCA-I(U) response
 # Set your own PCC rule in code below  
 # Set your IP address in HOST parameter : e.g HOST = "127.0.0.1"
 # This server supports CER,DWR,DPR,CCR-I,CCR-U,CCR-T,RAR-U,RAR-T
+# History of changes:
+# 06.03.2014 - added AAR/AAA over Rx interface <lavrbel@gmail.com>
 # *****************************************************************
 # This simulator is based on PyProtosim opensource software which is distributed under 
 # the terms of BSD license.
@@ -113,12 +115,12 @@ def create_CEA(H):
     CEA_avps=[]
     CEA_avps.append(encodeAVP("Origin-Host", ORIGIN_HOST))
     CEA_avps.append(encodeAVP("Origin-Realm", ORIGIN_REALM))
-    CEA_avps.append(encodeAVP("Vendor-Id", 12702))
+    CEA_avps.append(encodeAVP("Vendor-Id", 11111))
     CEA_avps.append(encodeAVP("Product-Name", "PCRF-SIM"))
     #CEA_avps.append(encodeAVP("Host-IP-Address", "127.0.0.1"))
     CEA_avps.append(encodeAVP('Auth-Application-Id', 16777238))
     CEA_avps.append(encodeAVP("Supported-Vendor-Id", 10415))
-    CEA_avps.append(encodeAVP("Supported-Vendor-Id", 12645))
+    CEA_avps.append(encodeAVP("Supported-Vendor-Id", 11112))
     CEA_avps.append(encodeAVP("Supported-Vendor-Id", 0))
     CEA_avps.append(encodeAVP("Result-Code", 2001))   #DIAMETER_SUCCESS 2001
     # Create message header (empty)
@@ -133,6 +135,39 @@ def create_CEA(H):
     # Add AVPs to header and calculate remaining fields
     ret=createRes(CEA,CEA_avps)
     # ret now contains CEA Response as hex string
+    return ret
+
+
+# Create AAA response to AAR request (Rx)
+        
+def create_AAA(H):
+    global DEST_REALM
+    AAR_avps=splitMsgAVPs(H.msg)
+    DEST_REALM=findAVP("Origin-Realm",AAR_avps)   
+         
+    # Let's build AA Answer
+    AAA_avps=[]
+    AAA_avps.append(encodeAVP("Origin-Host", ORIGIN_HOST))
+    AAA_avps.append(encodeAVP("Origin-Realm", ORIGIN_REALM))
+    AAA_avps.append(encodeAVP("Vendor-Id", 11111))
+    AAA_avps.append(encodeAVP("Product-Name", "PCRF-SIM"))
+    AAA_avps.append(encodeAVP('Auth-Application-Id', 16777236))
+    AAA_avps.append(encodeAVP("Supported-Vendor-Id", 10415))
+    AAA_avps.append(encodeAVP("Supported-Vendor-Id", 11112))
+    AAA_avps.append(encodeAVP("Supported-Vendor-Id", 0))
+    AAA_avps.append(encodeAVP("Result-Code", 2001))   #DIAMETER_SUCCESS 2001
+    # Create message header (empty)
+    AAA=HDRItem()
+    # Set command code
+    AAA.cmd=H.cmd
+    # Set Application-id
+    AAA.appId=H.appId
+    # Set Hop-by-Hop and End-to-End from request
+    AAA.HopByHop=H.HopByHop
+    AAA.EndToEnd=H.EndToEnd
+    # Add AVPs to header and calculate remaining fields
+    ret=createRes(AAA,AAA_avps)
+    # ret now contains AAA Response as hex string
     return ret
 
 
@@ -255,7 +290,7 @@ def create_CCA(H):
        CCA_avps.append(encodeAVP('Auth-Application-Id', 16777238))
        CCA_avps.append(encodeAVP('Supported-Vendor-Id', 0))
        CCA_avps.append(encodeAVP('Supported-Vendor-Id', 10415))
-       CCA_avps.append(encodeAVP('Supported-Vendor-Id', 12645))
+       CCA_avps.append(encodeAVP('Supported-Vendor-Id', 11112))
        CCA_avps.append(encodeAVP('Subscription-Id',[encodeAVP('Subscription-Id-Data', CCA_MSISDN), encodeAVP('Subscription-Id-Type', 0)]))
        CCA_avps.append(encodeAVP('Charging-Rule-Install',[encodeAVP('Charging-Rule-Name','activate_smtp_service'),encodeAVP('Charging-Rule-Name', 'set_service_id_1234_on')]))
        # Create message header (empty)
@@ -289,7 +324,7 @@ def create_CCA(H):
        CCA_avps.append(encodeAVP('Auth-Application-Id', 16777238))
        CCA_avps.append(encodeAVP('Supported-Vendor-Id', 0))
        CCA_avps.append(encodeAVP('Supported-Vendor-Id', 10415))
-       CCA_avps.append(encodeAVP('Supported-Vendor-Id', 12645))
+       CCA_avps.append(encodeAVP('Supported-Vendor-Id', 11112))
        CCA_avps.append(encodeAVP('Subscription-Id',[encodeAVP('Subscription-Id-Data', CCA_MSISDN), encodeAVP('Subscription-Id-Type', 0)]))
        CCA_avps.append(encodeAVP('Charging-Rule-Install',[encodeAVP('Charging-Rule-Name','activate_smtp_service')]))
        CCA_avps.append(encodeAVP('Charging-Rule-Install',[encodeAVP('Charging-Rule-Name','set_service_1234_on')]))
@@ -322,7 +357,7 @@ def create_CCA(H):
        CCA_avps.append(encodeAVP('Auth-Application-Id', 16777238))
        CCA_avps.append(encodeAVP('Supported-Vendor-Id', 0))
        CCA_avps.append(encodeAVP('Supported-Vendor-Id', 10415))
-       CCA_avps.append(encodeAVP('Supported-Vendor-Id', 12645))
+       CCA_avps.append(encodeAVP('Supported-Vendor-Id', 11112))
 	#CCA_avps.append(encodeAVP('Subscription-Id',[encodeAVP('Subscription-Id-Data', CCA_MSISDN), encodeAVP('Subscription-Id-Type', 0)]))
 	# Create message header (empty)
        CCA=HDRItem()
@@ -378,6 +413,8 @@ def process_request(rawdata):
         return create_CCA(H)        
     if H.cmd==282:  # Disconnect-Request-Peer
         return create_DPA(H)
+    if H.cmd==265:  # AAR/AAA
+        return create_AAA(H)        
     return create_UTC(H,"Unknown command code")
 
     
