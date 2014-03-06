@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
-# February 2012 - 
-# Version 0.3.1, Last change on Nov 14, 2012
+# March 2014 - 
+# Version 0.3.2, Last change on March 06, 2014
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
@@ -717,15 +717,22 @@ def createAuthenticator():
         ret=ret+chr(random.randrange(0, 256))
     return ret
 
+# For Accounting, initial authenticator is 16 zeroes 
+def createZeroAuthenticator():
+    ret=''
+    for i in range(16):
+        ret=ret+chr(0)
+    return ret
+    
 # Create response authenticator
 def calcAuthenticator(H,auth,secret):
     #ResponseAuth = MD5(Code+ID+Length+RequestAuth+Attributes+Secret)
     mlen=len(H.msg)/2+20
     msg="%02X"%H.Code+"%02X"%int(H.Identifier) + "%04X"%int(mlen)
-    msg=msg+"%32X"%auth+H.msg+secret.encode("hex")
+    msg=msg+auth.encode('hex')+H.msg+secret.encode("hex")
     m=md5_constructor(msg.decode("hex")).digest()
     return m
- 
+    
 # Create radius Request from <avps> and fields from Header H  
 def createReq(H,avps):
     H.msg=joinAVPs(avps)
@@ -735,13 +742,14 @@ def createReq(H,avps):
     ret=createPacket(H)
     return ret
 
-# Create diameter Response from <avps> and fields from Header H     
-def createRes(H,auth,avps):
+# Create radius Packet from <avps> and fields from Header H + calculate Authenticator
+# Use also as CreateRes
+def createWithAuthenticator(H,auth,avps,secret):
     H.msg=joinAVPs(avps)
-    H.authenticator=calcAuthenticator(H,auth,secret)
+    H.Authenticator=calcAuthenticator(H,auth,secret)
     ret=createPacket(H)
-    return 0
-
+    return ret 
+    
 #---------------------------------------------------------------------- 
 # Main message decoding routine
 # Input: radius message as HEX string    
@@ -899,3 +907,4 @@ def encode_GeoLoc(LocType,MCC,MNC,LAC,CI):
 # Ver 0.3.1 - Nov 13, 2012 - bugfix in pack_addr (if IPv6 starts with ":")
 #                          - encodeGeoLoc added
 #                          - comments added
+# Ver 0.3.2 - Mar 06, 2014 - Added ZeroAuthenticator for Radius accounting messages
