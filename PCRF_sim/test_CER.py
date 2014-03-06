@@ -1,5 +1,13 @@
 #!/usr/bin/python
 
+##################################################################
+# Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
+# February 2012 - March 2012
+# Version 0.1.0, Last change on Mar 06, 2014
+# This software is distributed under the terms of BSD license.    
+##################################################################
+
+
 #Next two lines are to include parent directory for testing
 import sys
 sys.path.append("..")
@@ -21,11 +29,11 @@ LoadDictionary("../dictDiameter.xml")
 CER_avps=[ ]
 CER_avps.append(encodeAVP('Origin-Host', 'vmclient.myrealm.example'))
 CER_avps.append(encodeAVP('Origin-Realm', 'myrealm.example'))
-CER_avps.append(encodeAVP('Vendor-Id', 12702))
+CER_avps.append(encodeAVP('Vendor-Id', 11111))
 CER_avps.append(encodeAVP('Product-Name', 'PCEF'))
 CER_avps.append(encodeAVP('Supported-Vendor-Id', 0))
 CER_avps.append(encodeAVP('Supported-Vendor-Id', 10415))
-CER_avps.append(encodeAVP('Supported-Vendor-Id', 12645))
+CER_avps.append(encodeAVP('Supported-Vendor-Id', 11111))
 CER_avps.append(encodeAVP('Auth-Application-Id', 16777238))
 # Create message header (empty)
 CER=HDRItem()
