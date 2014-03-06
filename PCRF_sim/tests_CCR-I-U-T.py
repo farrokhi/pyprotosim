@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+##################################################################
+# Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
+# February 2012 - March 2014
+# Version 0.1.1, Last change on Mar 06, 2014
+# This software is distributed under the terms of BSD license.    
+##################################################################
+
 # These are 5 CCR tests for using with and without LDAP database. 
 
 #Next two lines are to include parent directory for testing
