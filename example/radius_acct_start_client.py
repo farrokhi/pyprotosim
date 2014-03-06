@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+##################################################################
+# Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
+# February 2012 - March 2014
+# Version 0.2.9, Last change on Mar 06, 2014
+# This software is distributed under the terms of BSD license.    
+##################################################################
+
 # two lines are to include parent directory for testing
 import sys
 sys.path.append("..")
@@ -58,7 +65,7 @@ if __name__ == "__main__":
     #logging.basicConfig(level=logging.DEBUG)
     logging.basicConfig(level=logging.INFO)
     LoadDictionary("../dictRadius.xml")
-    HOST="10.1.1.45"
+    HOST="127.0.0.1"
     PORT=1813
     SECRET="secret"
     # Let's assume that my Radius messages will fit into 4k
@@ -93,5 +100,5 @@ if __name__ == "__main__":
     
 ######################################################        
 # History
-# 0.2.9 - Jan 30, 2014 - Radius accounting example added
+# 0.2.9 - Mar 06, 2014 - Radius accounting example added
 # 0.2.8 - May 31, 2013 - Radius initial version

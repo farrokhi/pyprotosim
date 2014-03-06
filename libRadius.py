@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
-# February 2012 - 
-# Version 0.3.1, Last change on Nov 14, 2012
+# March 2014 - 
+# Version 0.3.2, Last change on March 06, 2014
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
@@ -907,3 +907,4 @@ def encode_GeoLoc(LocType,MCC,MNC,LAC,CI):
 # Ver 0.3.1 - Nov 13, 2012 - bugfix in pack_addr (if IPv6 starts with ":")
 #                          - encodeGeoLoc added
 #                          - comments added
+# Ver 0.3.2 - Mar 06, 2014 - Added ZeroAuthenticator for Radius accounting messages
