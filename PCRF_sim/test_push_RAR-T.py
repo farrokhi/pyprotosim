@@ -73,7 +73,7 @@ if __name__ == "__main__":
     IDENTITY='1234567891'                        
     APPLICATION_ID=4
     
-    # SET SESSION ID TO THE ONE, STORED IN PCEF AND SENT WITH CCR-I request:
+    # SET HERE YOUR CLIENT'S SESSION ID TO THE ONE INITIATED BY PCEF AND SENT WITH CCR-I request:
     
     SESSION_ID='example_session-id;123455555567787687687687'
     
