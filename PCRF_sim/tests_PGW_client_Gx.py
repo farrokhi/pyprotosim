@@ -62,7 +62,7 @@ if __name__ == '__main__':
     HOST="127.0.0.1"
     PORT=3868
     ORIGIN_HOST="pgw.myrealm.example"
-    ORIGIN_REALM="myreal.example"
+    ORIGIN_REALM="myrealm.example"
     DEST_REALM="myrealm.example"
     DEST_HOST="pcrf.myrealm.example"
     IDENTITY="1234567890" # This is msisdn of user in SPR DB
