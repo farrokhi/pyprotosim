@@ -47,7 +47,7 @@
                          
 
 #Next two lines are to include parent directory for testing
-import sys, time
+import sys, time, os, subprocess
 sys.path.append("..")
 # Remove them normally
 
@@ -248,6 +248,7 @@ else:
 
 print "SLEEP 2 sec"
 time.sleep(2)
+
 
 #################### NOW SEND CCR-T REQUEST TO PCRF AND RECEIVE CCA-T ANSWER #############################################
 
