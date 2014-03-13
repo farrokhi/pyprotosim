@@ -3,7 +3,8 @@
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 - March 2014
-# Version 0.1.1, Last change on Mar 06, 2014
+# Version 0.1.2, Last change on Mar 12, 2014
+# Modified to run with PGW_client_tests.py
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
@@ -14,7 +15,8 @@ sys.path.append("..")
 # THIS TEST WILL SEND RAR-U MESSAGE TO PCRF server (IP_PCRF_SERVER:3869) WHICH WILL
 # SEND RAR-U request to PCEF client
 # YOUR PCEF CLIENT MUST BE CONNECTED TO PCRF BEFORE YOU SEND RAR-U
-# EDIT PROPER VALUES IN SESSION_ID, CHARGING-RULE-NAME, 
+# EDIT PROPER VALUES IN SESSION_ID, CHARGING-RULE-NAME
+# 
 
 from libDiameter import *
 
@@ -26,7 +28,8 @@ import time
  
 
 def create_RAR():
-
+     
+    sessionid= SESSION_ID
     # Let's build RAR-U
     RAR_avps=[ ]
     RAR_avps.append(encodeAVP('Session-Id', SESSION_ID))
@@ -38,10 +41,27 @@ def create_RAR():
     RAR_avps.append(encodeAVP('Destination-Realm', 'myrealm.example'))
     RAR_avps.append(encodeAVP('Destination-Host', 'vmclient.myrealm.example'))
     RAR_avps.append(encodeAVP('Re-Auth-Request-Type', 0))
-    RAR_avps.append(encodeAVP('Subscription-Id',[encodeAVP('Subscription-Id-Data',IDENTITY), encodeAVP('Subscription-Id-Type', 0)]))
-    RAR_avps.append(encodeAVP('Charging-Rule-Install',[encodeAVP('Charging-Rule-Name', 'activate_service_smtp'), encodeAVP('Charging-Rule-Name', 'set_service_1234_on')]))
-    RAR_avps.append(encodeAVP('Charging-Rule-Remove',[encodeAVP('Charging-Rule-Name', 'activate_service_filter'), encodeAVP('Charging-Rule-Name', 'set_service_14445_off')]))
-
+    #RAR_avps.append(encodeAVP('Subscription-Id',[encodeAVP('Subscription-Id-Data',IDENTITY), encodeAVP('Subscription-Id-Type', 0)]))
+    #RAR_avps.append(encodeAVP('Charging-Rule-Install',[encodeAVP('Charging-Rule-Name', 'activate_service_smtp'), encodeAVP('Charging-Rule-Name', 'set_service_1234_on')]))
+    #RAR_avps.append(encodeAVP('Charging-Rule-Remove',[encodeAVP('Charging-Rule-Name', 'activate_service_filter'), encodeAVP('Charging-Rule-Name', 'set_service_14445_off')]))
+    RAR_avps.append(encodeAVP('Subscription-Id',[encodeAVP('Subscription-Id-Data', IDENTITY), encodeAVP('Subscription-Id-Type', 0)]))
+    RAR_avps.append(encodeAVP('Subscription-Id',[encodeAVP('Subscription-Id-Data', '123456789012345'), encodeAVP('Subscription-Id-Type', 1)]))
+    
+    # SENDING RAR-U QoS highspeed profile with different max bitrate and qos settings
+    
+    # Removing basic profile :
+    
+    CCA_avps.append(encodeAVP('Charging-Rule-Remove',[encodeAVP('Charging-Rule-Base-Name','basic')]))
+    
+    # Installing highspeed profile:
+    
+    RAR_avps.append(encodeAVP('Charging-Rule-Install',[encodeAVP('Charging-Rule-Base-Name','highspeed')]))
+    RAR_avps.append(encodeAVP('QoS-Information',[encodeAVP('APN-Aggregate-Max-Bitrate-UL','1000000000'),encodeAVP('APN-Aggregate-Max-Bitrate-DL','2000000000')]))
+    RAR_avps.append(encodeAVP('Online',0)) # not yet OCS supported
+    RAR_avps.append(encodeAVP('Offline',0)) # not yet OFCS supported
+    RAR_avps.append(encodeAVP('Default-EPS-Bearer-QoS',[encodeAVP('QoS-Class-Identifier','QCI_5')]))
+    RAR_avps.append(encodeAVP('Allocation-Retention-Priority',[encodeAVP('Priority-Level','5')]))
+    
     # Create message header (empty)
     RAR=HDRItem()
     # Set command code
