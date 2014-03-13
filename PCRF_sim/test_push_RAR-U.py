@@ -51,7 +51,7 @@ def create_RAR():
     
     # Removing basic profile :
     
-    CCA_avps.append(encodeAVP('Charging-Rule-Remove',[encodeAVP('Charging-Rule-Base-Name','basic')]))
+    RAR_avps.append(encodeAVP('Charging-Rule-Remove',[encodeAVP('Charging-Rule-Base-Name','basic')]))
     
     # Installing highspeed profile:
     
