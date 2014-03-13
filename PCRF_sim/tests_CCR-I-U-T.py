@@ -20,7 +20,7 @@ from libDiameter import *
 if __name__ == '__main__':
 
 # SET THIS TO PCRF SIMULATOR IP/PORT
-    HOST='127.0.0.1'
+    HOST='192.168.0.20'
     PORT=3868
 
 
