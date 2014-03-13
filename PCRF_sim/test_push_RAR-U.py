@@ -69,11 +69,11 @@ if __name__ == "__main__":
     
     HOST="127.0.0.1"
     PORT=3869
-    IDENTITY="1234567891"                        
+    IDENTITY="1234567890"                        
     APPLICATION_ID=4
     
     # SET THIS TO YOUR SESSION ID
-    SESSION_ID='example;1226572656725762572676'
+    SESSION_ID='pgw.myrealm.example;1094791309121_1385989500_428022'
     # Let's assume that my Diameter messages will fit into 4k
     MSG_SIZE=4096
     # Connect to server
