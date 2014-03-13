@@ -39,7 +39,7 @@ def create_RAR():
     RAR_avps.append(encodeAVP('Supported-Vendor-Id', 11111))
     RAR_avps.append(encodeAVP('Auth-Application-Id', 16777238))
     RAR_avps.append(encodeAVP('Destination-Realm', 'myrealm.example'))
-    RAR_avps.append(encodeAVP('Destination-Host', 'vmclient.myrealm.example'))
+    RAR_avps.append(encodeAVP('Destination-Host', 'pgw.myrealm.example'))
     RAR_avps.append(encodeAVP('Re-Auth-Request-Type', 0))
     #RAR_avps.append(encodeAVP('Subscription-Id',[encodeAVP('Subscription-Id-Data',IDENTITY), encodeAVP('Subscription-Id-Type', 0)]))
     #RAR_avps.append(encodeAVP('Charging-Rule-Install',[encodeAVP('Charging-Rule-Name', 'activate_service_smtp'), encodeAVP('Charging-Rule-Name', 'set_service_1234_on')]))
