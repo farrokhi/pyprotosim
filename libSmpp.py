@@ -284,6 +284,8 @@ def encodeOptional(H):
     return msg
     
 def encodeAVP(cType,value):
+    dbg="AVP:",cType,value
+    logging.debug(dbg)
     if cType=="C-OS":
         return value.encode("hex")+"00"
     if cType=="Byte":
@@ -292,6 +294,8 @@ def encodeAVP(cType,value):
         return "%04X"%int(value)
     if cType=="OS":
         return value
+    if cType=="Hex":
+        return value        
     dbg="Unknown type",cType
     bailOut(dbg)    
 #---------------------------------------------------------------------- 
