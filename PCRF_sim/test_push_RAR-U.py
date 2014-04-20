@@ -2,9 +2,9 @@
 
 ##################################################################
 # Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
-# February 2012 - March 2014
-# Version 0.1.2, Last change on Mar 12, 2014
-# Modified to run with PGW_client_tests.py
+# Test client added by L.Belov <lavrbel@gmail.com>
+# February 2012 - April 2014
+# Version 0.1.1, Last change on Mar 11, 2014
 # This software is distributed under the terms of BSD license.    
 ##################################################################
 
