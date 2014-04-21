@@ -68,12 +68,12 @@ def create_unbind(seq):
 if __name__ == "__main__":
     # level for decoding are: DEBUG, INFO, WARNING, ERROR, CRITICAL
     # logging.basicConfig(filename='/path/to/your/log', level=logging.INFO)
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     LoadDictionary("../dictSmpp.xml")
     ################
-    #HOST="10.14.5.148"
-    HOST="localhost"
-    PORT=8889
+    HOST="192.168.176.131"
+    #HOST="localhost"
+    PORT=8888
     # Let's assume that my messages will fit into 4k
     MSG_SIZE=4096
     # Sequence starts with 1

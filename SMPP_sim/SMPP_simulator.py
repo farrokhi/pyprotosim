@@ -1,11 +1,10 @@
 #!/usr/bin/python
-
-##################################################################
-# Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
+######################################################################
+# Copyright (c) 2012-2014, Sergej Srepfler <sergej.srepfler@gmail.com>
 # February 2012 - 
-# Version 0.3.1, Last change on Nov 17, 2012
+# Version 0.3.2, Last change on Apr 21, 2014
 # This software is distributed under the terms of BSD license.    
-##################################################################
+######################################################################
 
 # SMPP Simulator build upon libSmpp
 # interrupt the program with Ctrl-C

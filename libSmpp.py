@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-##################################################################
-# Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
-# February 2012 - Nov 2012
-# Version 0.3.1, Last change on Nov 14, 2012
+######################################################################
+# Copyright (c) 2012-2014, Sergej Srepfler <sergej.srepfler@gmail.com>
+# February 2012 - 
+# Version 0.3.2, Last change on Apr 21, 2014
 # This software is distributed under the terms of BSD license.    
-##################################################################
+######################################################################
 
 # All functions needed to build/decode SMPP (Short Message Peer to Peer) messages
 
@@ -17,17 +17,49 @@ import logging
 import time
 import string
 
+FLAG_RES = 0x80000000
+
+TON_Unknown         = 0
+TON_International   = 1
+TON_National        = 2
+TON_NetworkSpecific = 3
+TON_SubscriberNumber= 4
+TON_Alphanumeric    = 5
+TON_Abbreviated     = 6
+
+NPI_Unknown         = 0
+NPI_ISDN            = 1
+NPI_Data            = 3
+NPI_Telex           = 4
+NPI_LandMobile      = 6
+NPI_National        = 8
+NPI_Private         = 9
+NPI_ERMES           = 10
+NPI_IP              = 14
+NPI_WAPClientId     = 18
+
+MS_ENROUTE          = 1     #The message is in enroute state.
+MS_DELIVERED        = 2     #Message is delivered to destination
+MS_EXPIRED          = 3     #Message validity period has expired.
+MS_DELETED          = 4     #Message has been deleted.
+MS_UNDELIVERABLE    = 5     #Message is undeliverable
+MS_ACCEPTED         = 6     #Message is in accepted state
+MS_UNKNOWN          = 7     #Message is in invalid state
+MS_REJECTED         = 8     #Message is in a rejected state
+
 # Header fields
 
 # Include common routines for all modules
 ERROR = -1
  
 # Hopefully let's keep dictionary definition compatibile
-class AVPItem:
+class dictItem:
     def __init__(self):
         self.code=0
         self.name=""
         self.type=""
+        self.mandatory=[]
+        self.desc=""
         
 class HDRItem:
     def __init__(self):
@@ -42,13 +74,13 @@ class HDRItem:
 # Load simplified dictionary from <file>
 def LoadDictionary(file):
     global dict_msg
-    global dict_optional
+    global dict_tag
     doc = minidom.parse(file)
     node = doc.documentElement
     dict_msg = doc.getElementsByTagName("msg")
-    dict_optional = doc.getElementsByTagName("optional")
+    dict_tag = doc.getElementsByTagName("tag")
 
-# Find Command definition in dictionary: 257->Capabilities-Exchange
+# Find Command definition in dictionary: 2->bind_transmitter
 def dictMSGcode2name(code):
     global dict_msg
     cmd=ERROR
@@ -73,7 +105,7 @@ def dictFindMandatoryAVP(code):
     return ERROR
 
 def dictFindOptionalAVPbyCode(code):
-    for command in dict_optional:
+    for command in dict_tag:
          cCode=command.getAttribute("code")
          cName=command.getAttribute("name")
          if code==cCode:
@@ -101,14 +133,24 @@ def dictFindDetails(code,mName):
                     return cName,cType,cMax
     dbg="Unknown",mName,"for code",code
     bailOut(dbg) 
-    
+
+def dictFindTagDetails(oName):
+    global dict_tag
+    for command in dict_tag:
+         cName=command.getAttribute("name")
+         cType=command.getAttribute("type")
+         cCode=command.getAttribute("code")
+         if cName==oName:
+             return cName,cType,cCode
+    dbg="Unknown",oName
+    bailOut(dbg)     
 #----------------------------------------------------------------------
 #
 # Decoding section
 #
 
 def decode_Integer32(data):
-    ret=struct.unpack("!I",data.decode("hex"))[0]
+    ret=struct.unpack("!U",data.decode("hex"))[0]
     return int(ret)
     
 def decode_Int(data):
@@ -125,15 +167,14 @@ def decode_as(msg,cType,cMax):
     if cType=="Byte":
         (sValue,msg)=chop_msg(msg,2)
         return (str(decode_Int(sValue)),msg)
-    if cType=="Hex":
-        (sValue,msg)=chop_msg(msg,2)
-        return (sValue,msg)
     if cType=="Word":
         (sValue,msg)=chop_msg(msg,4)
         return (str(decode_Integer16(sValue)),msg)
-    if cType=="OS":
+    if cType=="OctetString":
         (sValue,msg)=chop_msg(msg,cMax)
         return (sValue,msg)    
+    if cType=="None":
+        return('',msg)
     dbg="Unknown type",cType
     bailOut(dbg)
 
@@ -224,11 +265,9 @@ def decodeMandatory(H):
         logging.debug(dbg)
         # Fix to get previously defined length 
         #e.g short_message and short_message_len
-        if cMax!='':
-            if not cMax.isnumeric():
-                for r in ret:
-                    if string.find(r,cMax+'=')==0:
-                        cMax=int(r[len(cMax)+1:])
+        # For OctetString, previously decoded value is len
+        if cType=="OctetString":
+            cMax=int(ret[-1].split('=')[1])
         (data,msg)=decode_as(msg,cType,cMax)
         ret.append(cName+'='+data)
     H.mandatory=ret
@@ -280,6 +319,7 @@ def encodeMandatory(H):
     return msg
 
 def encodeOptional(H):    
+    # NOT Implemented yet - I never needed them
     msg=''
     return msg
     
@@ -292,10 +332,10 @@ def encodeAVP(cType,value):
         return "%02X"%int(value)
     if cType=="Word":
         return "%04X"%int(value)
-    if cType=="OS":
-        return value
-    if cType=="Hex":
-        return value        
+    if cType=="OctetString":
+        return value.encode("hex")
+    if cType=="None":
+        return ""
     dbg="Unknown type",cType
     bailOut(dbg)    
 #---------------------------------------------------------------------- 
@@ -309,4 +349,5 @@ def Connect(host,port):
         
 ######################################################        
 # History
-# Ver 0.3.1 - Nov 16, 2012 - initial version
+# 0.3.1 - Nov 16 '12 - initial version
+# 0.3.2 - Apr 21 '14 - updated to work with new dictionary
