@@ -34,6 +34,7 @@ def create_bind_transmitter(seq):
        
 def create_submit_sm(seq):
     R=HDRItem()
+    MSG="Testing!!!"
     R.mandatory.append('service_type=')
     R.mandatory.append('source_addr_ton=0')
     R.mandatory.append('source_addr_npi=0')
@@ -50,8 +51,8 @@ def create_submit_sm(seq):
     R.mandatory.append('replace_if_present_flag=0')
     R.mandatory.append('data_coding=0')
     R.mandatory.append('sm_default_msg_id=0')
-    R.mandatory.append('sm_length=28')
-    R.mandatory.append('short_message=00510075006f0074006100200045')
+    R.mandatory.append('sm_length='+str(len(MSG)))
+    R.mandatory.append('short_message='+MSG)
     R.optional=[]
     R.sequence=seq
     R.result=0 #OK
