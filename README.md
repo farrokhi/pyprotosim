@@ -4,7 +4,7 @@ Python Protocol Simulator
 Copyright (c) 2012, Sergej Srepfler <sergej.srepfler@gmail.com>
 EAP calculations use parts of hostapd code http://w1.fi/hostapd
 Copyright (c) 2004-2008, Jouni Malinen and contributors. All rights reserved.
-EAP-SIM calculations use a3a8 code http://http://www.scard.org/gsm
+EAP-SIM calculations use a3a8 code http://www.scard.org/gsm
 Copyright 1998, Marc Briceno, Ian Goldberg, and David Wagner. All rights reserved.
 
 This program is licensed under the BSD license (the one with advertisement
